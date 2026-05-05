@@ -619,9 +619,40 @@ a estrutura desses DBs é inferida pela declaração VAR dos FBs correspondentes
 não por declaração explícita. No TIA Portal, DBs de instância são gerados
 automaticamente a partir do FB.
 
-### UDTs de STATUS e TIME (arquivos .udt vazios)
+### Estrutura dos UDTs de STATUS e TIME
 
-Os arquivos em `PLC_DataTypes/STATUS/` e `PLC_DataTypes/TIME/` (exceto MAQ_ESTADOS)
-estão vazios. A estrutura de `UDT_STATUS_PLANTA` (usada em `CONTROLE_STATUS_DB7`)
-é a que contém os campos `.BRITADORES.BRT02`, `.TRANSPORTADORES.TRP06`, etc.,
-mas o arquivo UDT não está declarado neste repositório.
+**PLC_DataTypes/STATUS/**
+
+```
+UDT_STATUS_BRITADORES   { BRT02: Bool; BRT03: Bool; BRT04: Bool }
+UDT_STATUS_CALHAS       { CVR01: Bool; CVR02: Bool; CVR03: Bool }
+UDT_STATUS_PENEIRAS     { PNR02: Bool; PNR03: Bool; PNR04: Bool }
+UDT_STATUS_DETECTORES   { DTC01: Bool; DTC02: Bool; DTC03: Bool }
+UDT_STATUS_TRANSPORTADORES {
+    TRP06..TRP19: Bool  (14 campos)
+}
+UDT_STATUS_PLANTA {        ← usado em CONTROLE_STATUS_DB7 (StOnGlobal, StStartingGlobal, StFaultGlobal)
+    BRITADORES      : "UDT_STATUS_BRITADORES"
+    TRANSPORTADORES : "UDT_STATUS_TRANSPORTADORES"
+    PENEIRAS        : "UDT_STATUS_PENEIRAS"
+    CALHAS          : "UDT_STATUS_CALHAS"
+    GLOBAL          : Bool   ← bit de falha geral da planta
+}
+```
+
+**PLC_DataTypes/TIME/**
+
+```
+UDT_TIME_BRITADORES     { BR02: Time; BR03: Time; BR04: Time }
+UDT_TIME_CALHAS         { CVR01: Time; CVR02: Time; CVR03: Time }
+UDT_TIME_PENEIRAS       { PNR02: Time; PNR03: Time; PNR04: Time }
+UDT_TIME_TRANSPORTADORES {
+    TRP06..TRP19: Time  (14 campos)
+}
+UDT_TIME_PLANTA {          ← usado em IHM_DB6 (ParSdaTime, ParSdaDelayFalha)
+    BRITADORES      : "UDT_TIME_BRITADORES"
+    TRANSPORTADORES : "UDT_TIME_TRANSPORTADORES"
+    PENEIRAS        : "UDT_TIME_PENEIRAS"
+    CALHAS          : "UDT_TIME_CALHAS"
+}
+```
