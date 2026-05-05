@@ -90,7 +90,7 @@ BEGIN
 	            #EL.StOn := 0;
 	            #EL.StIdling := 0;
 	            #EL.StFault := 0;
-	            
+            #EL.Diag.TsEntradaEstado := "Sys_DB".CurrentDT;
 	        ELSIF #EL.StOff THEN
 	            IF #tmpFalha OR #tmpFalhaLube OR NOT #tmpTempAltaOk THEN
 	                #EL.StOff := 0;
@@ -126,6 +126,7 @@ BEGIN
 	            #EL.SdaDelayFalha := "SIRENE_DB".ParTempoToque + #EL.ParPrepTime;
 	            
 	            #EL.StStep := 1; // Aguardando Sirene / Preparando...
+            #EL.Diag.TsEntradaEstado := "Sys_DB".CurrentDT;
 	            
 	        ELSIF #EL.StPreparing THEN
 	            // O Watchdog decrementa INDEPENDENTE da sirene (Proteção contra travamento)
@@ -170,6 +171,14 @@ BEGIN
 	            // Sirene já tocou, usamos apenas o tempo da inércia mecânica
 	            #EL.SdaTime := #EL.ParSdaTime;
 	            #EL.StStep := 2; // Aguardando partida do rotor principal...
+            #EL.Diag.LogIndex := (#EL.Diag.LogIndex + 1) MOD 5;
+            #EL.Diag.StatusLog[#EL.Diag.LogIndex].Status := #EL.StStep;
+            #EL.Diag.StatusLog[#EL.Diag.LogIndex].Timestamp := "Sys_DB".CurrentDT;
+            #EL.Diag.StatusLog[#EL.Diag.LogIndex].TempoCiclo := "Sys_DB".CurrentDT - #EL.Diag.TsEntradaEstado;
+            IF #EL.Diag.LogCount < 5 THEN
+                #EL.Diag.LogCount := #EL.Diag.LogCount + 1;
+            END_IF;
+            #EL.Diag.TsEntradaEstado := "Sys_DB".CurrentDT;
 	            
 	        ELSIF #EL.StStarting THEN
 	            #EL.SdaTime := #EL.SdaTime - "Sys_DB".OutCycleTime;
@@ -216,6 +225,14 @@ BEGIN
 	            #EL.StOn := 1;
 	            #EL.StStarting := 0;
 	            #EL.StStep := 3; // Em operação normal
+            #EL.Diag.LogIndex := (#EL.Diag.LogIndex + 1) MOD 5;
+            #EL.Diag.StatusLog[#EL.Diag.LogIndex].Status := #EL.StStep;
+            #EL.Diag.StatusLog[#EL.Diag.LogIndex].Timestamp := "Sys_DB".CurrentDT;
+            #EL.Diag.StatusLog[#EL.Diag.LogIndex].TempoCiclo := "Sys_DB".CurrentDT - #EL.Diag.TsEntradaEstado;
+            IF #EL.Diag.LogCount < 5 THEN
+                #EL.Diag.LogCount := #EL.Diag.LogCount + 1;
+            END_IF;
+            #EL.Diag.TsEntradaEstado := "Sys_DB".CurrentDT;
 	            
 	        ELSIF #EL.StOn THEN
 	            IF #tmpFalha OR #tmpFalhaLube THEN
@@ -263,6 +280,7 @@ BEGIN
 	            #EL.StStarting := 0;
 	            #EL.SdaDelayIdling := #EL.ParSdaDelayIdling;
 	            #EL.StStep := 4; // Desligando: Resfriamento e Inércia ativos
+            #EL.Diag.TsEntradaEstado := "Sys_DB".CurrentDT;
 	            
 	        ELSIF #EL.StIdling THEN
 	            #EL.SdaDelayIdling := #EL.SdaDelayIdling - "Sys_DB".OutCycleTime;
@@ -298,15 +316,18 @@ BEGIN
 	                #EL.StOn := 0;
 	                #EL.StIdling := 0;
 	                
-	                IF #EL.StStep < 12 OR #EL.StStep > 15 THEN
-	                    #EL.StStep := 11; // Falha de Segurança/Hardware
-	                END_IF;
-	            END_IF;
-	            
-	        ELSIF #EL.StFault THEN
-	            IF #EL.CmdFalhaReset AND NOT #tmpFalha AND NOT #tmpFalhaLube AND #tmpTempAltaOk THEN
-	                #EL.StFault := 0;
-	                #TransitionTo.StOff := 1;
+                #EL.Diag.StatusAnterior := #EL.StStep;
+                IF #EL.StStep < 12 OR #EL.StStep > 15 THEN
+                    #EL.StStep := 11; // Falha de Segurança/Hardware
+                END_IF;
+                #EL.Diag.LogIndex := (#EL.Diag.LogIndex + 1) MOD 5;
+                #EL.Diag.StatusLog[#EL.Diag.LogIndex].Status := #EL.StStep;
+                #EL.Diag.StatusLog[#EL.Diag.LogIndex].Timestamp := "Sys_DB".CurrentDT;
+                #EL.Diag.StatusLog[#EL.Diag.LogIndex].TempoCiclo := "Sys_DB".CurrentDT - #EL.Diag.TsEntradaEstado;
+                IF #EL.Diag.LogCount < 5 THEN
+                    #EL.Diag.LogCount := #EL.Diag.LogCount + 1;
+                END_IF;
+                #EL.Diag.TsEntradaEstado := "Sys_DB".CurrentDT;
 	            END_IF;
 	        END_IF;
 	    END_REGION

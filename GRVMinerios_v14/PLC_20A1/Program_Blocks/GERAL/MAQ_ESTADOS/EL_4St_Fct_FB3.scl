@@ -78,11 +78,7 @@ BEGIN
 	            #EL.StOn := 0;
 	            #EL.StStarting := 0;
 	            #EL.StFault := 0;
-	            
-	            // --- CICLO DO ESTADO ---
-	        ELSIF #EL.StOff THEN
-	            // Prioridade Máxima: Falha de hardware com a máquina parada
-	            IF #tmpFalha THEN
+            #EL.Diag.TsEntradaEstado := "Sys_DB".CurrentDT;
 	                #EL.StOff := 0;
 	                #TransitionTo.StFault := 1;
 	                
@@ -120,6 +116,14 @@ BEGIN
 	            // Carrega Watchdog da Sirene (Tempo programado + + o tempo mecânico)
 	            #EL.SdaTime := "SIRENE_DB".ParTempoToque + #EL.ParSdaTime;
 	            #EL.StStep := 1; // 1: Iniciando sequência...
+            #EL.Diag.LogIndex := (#EL.Diag.LogIndex + 1) MOD 5;
+            #EL.Diag.StatusLog[#EL.Diag.LogIndex].Status := #EL.StStep;
+            #EL.Diag.StatusLog[#EL.Diag.LogIndex].Timestamp := "Sys_DB".CurrentDT;
+            #EL.Diag.StatusLog[#EL.Diag.LogIndex].TempoCiclo := "Sys_DB".CurrentDT - #EL.Diag.TsEntradaEstado;
+            IF #EL.Diag.LogCount < 5 THEN
+                #EL.Diag.LogCount := #EL.Diag.LogCount + 1;
+            END_IF;
+            #EL.Diag.TsEntradaEstado := "Sys_DB".CurrentDT;
 	            
 	            // --- CICLO DO ESTADO ---
 	        ELSIF #EL.StStarting THEN
@@ -190,6 +194,14 @@ BEGIN
 	            #EL.StOn := 1;
 	            #EL.StStarting := 0;
 	            #EL.StStep := 4; // 4: Em operação normal
+            #EL.Diag.LogIndex := (#EL.Diag.LogIndex + 1) MOD 5;
+            #EL.Diag.StatusLog[#EL.Diag.LogIndex].Status := #EL.StStep;
+            #EL.Diag.StatusLog[#EL.Diag.LogIndex].Timestamp := "Sys_DB".CurrentDT;
+            #EL.Diag.StatusLog[#EL.Diag.LogIndex].TempoCiclo := "Sys_DB".CurrentDT - #EL.Diag.TsEntradaEstado;
+            IF #EL.Diag.LogCount < 5 THEN
+                #EL.Diag.LogCount := #EL.Diag.LogCount + 1;
+            END_IF;
+            #EL.Diag.TsEntradaEstado := "Sys_DB".CurrentDT;
 	            
 	            // --- CICLO DO ESTADO ---
 	        ELSIF #EL.StOn THEN
@@ -240,21 +252,27 @@ BEGIN
 	                #EL.StOn := 0;
 	                #EL.StStarting := 0;
 	                
-	                // Protege os status específicos de processo (9, 10 e 11) definidos nas etapas
-	                IF #EL.StStep <> 9 AND #EL.StStep <> 10 AND #EL.StStep <> 11 THEN
-	                    #EL.StStep := 8; // 8: Falha de Segurança/Hardware
-	                END_IF;
-	            END_IF;
-	            
-	            // --- CICLO DO ESTADO (RESET ANTI-MEMÓRIA) ---
-	        ELSIF #EL.StFault THEN
-	            // Exige que o disjuntor/relé térmico tenha sido rearmado fisicamente 
-	            // ANTES do comando da IHM ser aceito.
-	            IF #EL.CmdFalhaReset AND NOT #tmpFalha THEN
-	                #EL.StFault := 0;
-	                #TransitionTo.StOff := 1;
-	            END_IF;
-	        END_IF;
+                    #EL.Diag.StatusAnterior := #EL.StStep;
+                    
+                    // Protege os status específicos de processo (9, 10 e 11) definidos nas etapas
+                    IF #EL.StStep <> 9 AND #EL.StStep <> 10 AND #EL.StStep <> 11 THEN
+                        #EL.StStep := 8; // 8: Falha de Segurança/Hardware
+                    END_IF;
+                    #EL.Diag.LogIndex := (#EL.Diag.LogIndex + 1) MOD 5;
+                    #EL.Diag.StatusLog[#EL.Diag.LogIndex].Status := #EL.StStep;
+                    #EL.Diag.StatusLog[#EL.Diag.LogIndex].Timestamp := "Sys_DB".CurrentDT;
+                    #EL.Diag.StatusLog[#EL.Diag.LogIndex].TempoCiclo := "Sys_DB".CurrentDT - #EL.Diag.TsEntradaEstado;
+                    IF #EL.Diag.LogCount < 5 THEN
+                        #EL.Diag.LogCount := #EL.Diag.LogCount + 1;
+                    END_IF;
+                    #EL.Diag.TsEntradaEstado := "Sys_DB".CurrentDT;
+                END_IF;
+            ELSIF #EL.StFault THEN
+                IF #EL.CmdFalhaReset AND NOT #tmpFalha THEN
+                    #EL.StFault := 0;
+                    #TransitionTo.StOff := 1;
+                END_IF;
+            END_IF;
 	    END_REGION
 	    
 	UNTIL NOT #TransitionTo.StOn AND NOT #TransitionTo.StOff AND

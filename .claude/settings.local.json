@@ -11,7 +11,12 @@
       "Bash(git push *)",
       "Bash(Get-ChildItem -Path \"d:\\\\gds\\\\vscode\\\\automacao_industrial\\\\GRVMinerios_v14\" -Recurse -File)",
       "PowerShell(Get-ChildItem -Path \"d:\\\\gds\\\\vscode\\\\automacao_industrial\\\\GRVMinerios_v14\" -Recurse -File | ForEach-Object { [PSCustomObject]@{FullPath=$_.FullName; Size=$_.Length} } | Format-Table -AutoSize)",
-      "Bash(xargs wc *)"
+      "Bash(xargs wc *)",
+      "Bash(cd /d \"d:\\\\gds\\\\vscode\\\\automacao_industrial\")",
+      "Bash(findstr /s /i \"Sys_DB\" *.scl)",
+      "Bash(findstr /s /i \"Sys_DB\" \"GRVMinerios_v14\\\\*.scl\")",
+      "Bash(findstr /s /i \"Sys_DB\" \"GRVMinerios_v14\\\\PLC_20A1\\\\Program_Blocks\\\\*.scl\")",
+      "Bash(findstr /s /i \"Sys_DB\" \"GRVMinerios_v14\\\\PLC_20A1\\\\Program_Blocks\\\\GERAL\\\\*.scl\")"
     ]
   }
 }

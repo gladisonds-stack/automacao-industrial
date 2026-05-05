@@ -138,7 +138,7 @@ GRVMinerios_v14/
 │   │   └── SYS/
 │   │       ├── Sys_Safety_FC3.scl ← FC3: emergências → GERAL_EMERGENCIA_OK + torre luminosa
 │   │       ├── Sys_FB4.scl       ← FB4: acumula tempo de ciclo → OutPulse1s, OutCycleTime
-│   │       └── Sys_DB3.scl       ← DB3: instância do Sys_FB4 (OutPulse1s, OutCycleTime)
+│   │       └── Sys_DB_DB3.scl    ← DB3: instância do Sys_FB4 (OutPulse1s, OutCycleTime, CurrentDT)
 │   ├── PARAMETROS/
 │   │   └── SincParam_FC5.scl     ← FC5: IHM_DB.Parametros → Par* dos DBs de controle (1x/s)
 │   ├── PENEIRAS/
@@ -622,7 +622,7 @@ existem nas tags mas seu acionamento não aparece no código lido.
 ### Conteúdo dos DBs de instância (arquivos .scl vazios)
 
 Os arquivos `BRITADORES_DB2.scl`, `TRANSPORTADORES_DB1.scl`, `PENEIRAS_DB4.scl`,
-`CALHA_VIBRATORIA_DB5.scl`, `SIRENE_DB9.scl` e `Sys_DB3.scl` estão vazios —
+`CALHA_VIBRATORIA_DB5.scl`, `SIRENE_DB9.scl` e `Sys_DB_DB3.scl` estão vazios —
 a estrutura desses DBs é inferida pela declaração VAR dos FBs correspondentes,
 não por declaração explícita. No TIA Portal, DBs de instância são gerados
 automaticamente a partir do FB.
@@ -664,3 +664,40 @@ UDT_TIME_PLANTA {          ← usado em IHM_DB6 (ParSdaTime, ParSdaDelayFalha)
     CALHAS          : "UDT_TIME_CALHAS"
 }
 ```
+
+---
+
+## 13. Regras de Execução para o Claude Code
+
+### Antes de qualquer alteração
+
+- Leia todos os arquivos envolvidos com `Read` **antes** de editar — nunca edite às cegas
+- Verifique se variáveis referenciadas já existem: use `Grep` para localizar a declaração no código-fonte
+- Confirme nomes exatos de arquivos com `Glob` antes de renomear ou criar referências cruzadas
+- Nunca assuma que uma variável existe — localize ela no código; se não encontrar, ela não existe
+
+### Antes de implementar nova funcionalidade
+
+- Liste todos os arquivos que serão afetados (SCL, UDT, DB, documentação)
+- Verifique dependências: um campo novo em um UDT pode exigir alteração em FB, DB e CLAUDE.md
+- Respeite a ordem de alteração: **UDT → FB → DB → documentação**
+  - UDT define a estrutura; FB usa a estrutura; DB instancia o FB; documentação descreve o resultado
+
+### Ao referenciar DBs globais
+
+Para `"Sys_DB".Campo`, `"IHM_DB".Campo` e `"CONTROLE_STATUS_DB".Campo`:
+
+| DB global            | Arquivo de declaração      | FB de origem     |
+|----------------------|----------------------------|------------------|
+| `"Sys_DB"`           | `Sys_FB4.scl`              | FB4 "Sys"        |
+| `"IHM_DB"`           | `IHM_DB6.scl`              | DB6 global       |
+| `"CONTROLE_STATUS_DB"` | `CONTROLE_STATUS_DB7.scl` | DB7 global       |
+
+- Nunca use `"Sys_DB".AlgumCampo` sem confirmar que `AlgumCampo` está declarado em `Sys_FB4.scl`
+- O campo deve existir em `VAR`, `VAR_OUTPUT` ou `VAR_INPUT` do FB correspondente
+
+### Padrão de validação após cada alteração
+
+1. **Zero ocorrências do nome antigo**: após renomear arquivo ou variável, `Grep` pelo nome antigo deve retornar vazio
+2. **Arquivos referenciados existem**: após criar referência a um arquivo, confirmar com `Glob` que ele existe no caminho exato
+3. **Consistência entre código e documentação**: se CLAUDE.md descreve um campo ou arquivo, ele deve existir no projeto com o nome exato descrito

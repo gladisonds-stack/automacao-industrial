@@ -1,0 +1,9 @@
+TYPE "LogEntry"
+VERSION : 0.1
+   STRUCT
+      Status : INT;
+      Timestamp : DTL;
+      TempoCiclo : TIME;
+   END_STRUCT;
+
+END_TYPE

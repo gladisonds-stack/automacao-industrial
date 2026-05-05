@@ -32,6 +32,13 @@ VERSION : 0.1
       StBotao : Bool;
       StAnteriorBotao : Bool;
       StStep : UInt;
+      Diag : STRUCT
+          StatusAnterior  : INT;
+          LogIndex        : INT := -1;
+          LogCount        : INT := 0;
+          StatusLog       : ARRAY[0..4] OF "LogEntry";
+          TsEntradaEstado : DTL;
+      END_STRUCT;
    END_STRUCT;
 
 END_TYPE

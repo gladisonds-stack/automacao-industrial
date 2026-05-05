@@ -5,9 +5,10 @@ VERSION : 0.1
       OutPulse1s : Bool;
    END_VAR
 
-   VAR 
+   VAR
       accumulatedTime : LReal;
       OutCycleTime : Time;
+      CurrentDT : DTL;
    END_VAR
 
 
@@ -15,7 +16,10 @@ BEGIN
 	// *** Variáveis Estáticas (Static) ***
 	// #accumulatedTime : REAL := 0.0; // Variável para acumular o tempo decorrido (em segundos)
 	// #outRealTimeCounter : DINT := 0; // Contador de tempo real (em segundos)
-	
+
+	// Leitura do RTC — executada no início de cada ciclo
+	RD_LOC_T(OUT => #CurrentDT);
+
 	#accumulatedTime += "ScanPLC"; // Adiciona a duração do ciclo atual ao tempo acumulado
 	
 	IF #accumulatedTime >= 1.0 THEN

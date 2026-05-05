@@ -1,0 +1,15 @@
+DATA_BLOCK "Sys_DB"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+NON_RETAIN
+"Sys"
+
+// Variáveis herdadas do Sys_FB4 (geradas automaticamente pelo TIA Portal):
+//   OutPulse1s  : Bool  — pulso de 1 segundo; gatea SincParam no Main_OB1
+//   OutCycleTime: Time  — tempo de ciclo acumulado; usado pelos FBs para decrementar timers
+//   CurrentDT   : DTL   — data/hora atual do RTC; usado pelos FBs para registrar timestamps de diagnóstico
+
+BEGIN
+
+END_DATA_BLOCK
+

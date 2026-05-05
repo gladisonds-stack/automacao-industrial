@@ -99,9 +99,7 @@ BEGIN
 	            #EL.StOn := 0;
 	            #EL.StIdling := 0;
 	            #EL.StFault := 0;
-	            
-	            // --- CICLO DO ESTADO ---
-	        ELSIF #EL.StOff THEN
+            #EL.Diag.TsEntradaEstado := "Sys_DB".CurrentDT;
 	            
 	            // Prioridade Máxima: Falha de hardware com a máquina parada
 	            IF #tmpFalha OR #tmpFalhaLube THEN
@@ -217,6 +215,7 @@ BEGIN
 	            // Carrega o tempo obrigatório de pré-lubrificação estipulado pelo fabricante
 	            #EL.SdaDelaySda_2 := #EL.ParPreLubeTime;
 	            #EL.StStep := 4; // 4: Lubrificação OK, executando pré-lubrificação
+            #EL.Diag.TsEntradaEstado := "Sys_DB".CurrentDT;
 	            
 	            // --- CICLO DO ESTADO ---
 	        ELSIF #EL.StWaiting THEN
@@ -260,12 +259,14 @@ BEGIN
 	            // Carrega o Watchdog máximo focado 100% no motor principal atracar
 	            #EL.SdaTime := #EL.ParSdaTime;
 	            #EL.StStep := 5; // 5: Partindo Motor Principal (Rotor VSI)
-	            
-	            // --- CICLO DO ESTADO ---
-	        ELSIF #EL.StStarting THEN
-	            #EL.SdaTime := #EL.SdaTime - "Sys_DB".OutCycleTime;
-	            
-	            IF #tmpFalha OR #tmpFalhaLube THEN
+            #EL.Diag.LogIndex := (#EL.Diag.LogIndex + 1) MOD 5;
+            #EL.Diag.StatusLog[#EL.Diag.LogIndex].Status := #EL.StStep;
+            #EL.Diag.StatusLog[#EL.Diag.LogIndex].Timestamp := "Sys_DB".CurrentDT;
+            #EL.Diag.StatusLog[#EL.Diag.LogIndex].TempoCiclo := "Sys_DB".CurrentDT - #EL.Diag.TsEntradaEstado;
+            IF #EL.Diag.LogCount < 5 THEN
+                #EL.Diag.LogCount := #EL.Diag.LogCount + 1;
+            END_IF;
+            #EL.Diag.TsEntradaEstado := "Sys_DB".CurrentDT;
 	                #EL.StStarting := 0;
 	                #TransitionTo.StFault := 1;
 	                
@@ -313,10 +314,14 @@ BEGIN
 	            #EL.StStarting := 0;
 	            #EL.StStep := 6; // 6: Em operação normal
 	            #EL.SdaDelayFalha := #EL.ParSdaDelayFalha;
-	            
-	            // --- CICLO DO ESTADO ---
-	        ELSIF #EL.StOn THEN
-	            IF #tmpFalha OR #tmpFalhaLube THEN
+            #EL.Diag.LogIndex := (#EL.Diag.LogIndex + 1) MOD 5;
+            #EL.Diag.StatusLog[#EL.Diag.LogIndex].Status := #EL.StStep;
+            #EL.Diag.StatusLog[#EL.Diag.LogIndex].Timestamp := "Sys_DB".CurrentDT;
+            #EL.Diag.StatusLog[#EL.Diag.LogIndex].TempoCiclo := "Sys_DB".CurrentDT - #EL.Diag.TsEntradaEstado;
+            IF #EL.Diag.LogCount < 5 THEN
+                #EL.Diag.LogCount := #EL.Diag.LogCount + 1;
+            END_IF;
+            #EL.Diag.TsEntradaEstado := "Sys_DB".CurrentDT;
 	                #EL.StOn := 0;
 	                #TransitionTo.StFault := 1;
 	                
@@ -365,13 +370,7 @@ BEGIN
 	            // ?? Carrega o tempo estipulado pela UDT padronizada
 	            #EL.SdaTime := #EL.ParSdaDelayIdling;
 	            #EL.StStep := 7; // 7: Pós-lubrificação ativa / Inércia
-	            
-	            // --- CICLO DO ESTADO ---
-	        ELSIF #EL.StIdling THEN
-	            #EL.SdaTime := #EL.SdaTime - "Sys_DB".OutCycleTime;
-	            
-	            // Se a pressão de óleo cair ANTES do rotor parar, é uma falha catastrófica!
-	            IF #tmpFalha OR #tmpFalhaLube OR NOT #EL.EnFLigado THEN
+            #EL.Diag.TsEntradaEstado := "Sys_DB".CurrentDT;
 	                #EL.StStep := 15; // 15: Falha em Operação: Perda de Feedback mecânico
 	                #EL.StIdling := 0;
 	                #TransitionTo.StFault := 1;
@@ -415,19 +414,18 @@ BEGIN
 	                
 	                // Protege os status que fornecem detalhes específicos da falha (ex: Timeout, Watchdog)
 	                // Se a falha foi genérica (Hardware/Térmico), aplica o código 11.
-	                IF #EL.StStep < 12 OR #EL.StStep > 15 THEN
-	                    #EL.StStep := 11; // 11: Falha de Segurança/Hardware
-	                END_IF;
-	            END_IF;
-	            
-	            // --- CICLO DO ESTADO (RESET ANTI-MEMÓRIA) ---
-	        ELSIF #EL.StFault THEN
-	            // Exige que a falha física tenha sido resolvida (Disjuntor rearmado)
-	            // ANTES do operador conseguir dar o comando de Reset. Isso evita 
-	            // "latches" inseguros do botão de reset na tela da IHM.
-	            IF #EL.CmdFalhaReset AND NOT #tmpFalha AND NOT #tmpFalhaLube THEN
-	                #EL.StFault := 0;
-	                #TransitionTo.StOff := 1;
+                #EL.Diag.StatusAnterior := #EL.StStep;
+                IF #EL.StStep < 12 OR #EL.StStep > 15 THEN
+                    #EL.StStep := 11; // 11: Falha de Segurança/Hardware
+                END_IF;
+                #EL.Diag.LogIndex := (#EL.Diag.LogIndex + 1) MOD 5;
+                #EL.Diag.StatusLog[#EL.Diag.LogIndex].Status := #EL.StStep;
+                #EL.Diag.StatusLog[#EL.Diag.LogIndex].Timestamp := "Sys_DB".CurrentDT;
+                #EL.Diag.StatusLog[#EL.Diag.LogIndex].TempoCiclo := "Sys_DB".CurrentDT - #EL.Diag.TsEntradaEstado;
+                IF #EL.Diag.LogCount < 5 THEN
+                    #EL.Diag.LogCount := #EL.Diag.LogCount + 1;
+                END_IF;
+                #EL.Diag.TsEntradaEstado := "Sys_DB".CurrentDT;
 	            END_IF;
 	        END_IF;
 	    END_REGION
