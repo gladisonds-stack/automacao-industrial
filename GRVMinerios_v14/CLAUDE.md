@@ -404,36 +404,50 @@ BRT02/BRT03 (cônicos) e BRT04 (VSI) são **mutuamente exclusivos**.
 
 ### Intertravamentos por linha (modo automático)
 
+Leitura direta de `TRANSPORTADORES_FB5.scl`, `BRITADORES_FB2.scl`, `PENEIRAS_FB6.scl` e `CALHA_VIBRATORIA_FB7.scl`.
+
 **Linha A — BRT02 (Cônico)**
 
-| Equipamento | Habilita AUTO quando downstream estiver `StOn` | Permissivo adicional             |
-|-------------|------------------------------------------------|----------------------------------|
-| TRP06       | BRT02 StOn                                     | NOT BRT02 fault, NOT DTC01       |
-| BRT02       | TRP07 StOn                                     | NOT BRT04 StOn                   |
-| TRP07       | PNR02 StOn                                     | NOT BRT02 fault, NOT PNR02 fault |
-| CVR01       | TRP06 StOn                                     | NOT DTC01, NOT TRP06 fault, NOT BRT02 fault |
+| Equipamento | Nome funcional          | Habilita AUTO quando               | Permissivo adicional                        |
+|-------------|-------------------------|------------------------------------|---------------------------------------------|
+| TRP09       | PASSANTE BRT02          | BRT02 StOn                         | —                                           |
+| TRP06       | ALIMENTAÇÃO BRT02       | BRT02 StOn                         | NOT BRT02 fault, NOT DTC01                  |
+| BRT02       | Britador Cônico         | TRP07 StOn                         | NOT BRT04 StOn                              |
+| TRP07       | SAÍDA BRT02 PARA PNR02  | PNR02 StOn                         | NOT BRT02 fault, NOT PNR02 fault            |
+| TRP08       | RETORNO BRT02           | PNR02 StOn                         | NOT BRT02 fault                             |
+| CVR01       | Calha Alim. Linha A     | TRP06 StOn                         | NOT DTC01, NOT TRP06 fault, NOT BRT02 fault |
 
 **Linha B — BRT03 (Cônico)**
 
-| Equipamento | Habilita AUTO quando downstream estiver `StOn` | Permissivo adicional             |
-|-------------|------------------------------------------------|----------------------------------|
-| BRT03       | TRP10 StOn                                     | NOT BRT04 StOn                   |
-| PNR02       | BRT03 StOn AND TRP09 StOn                      | NOT TRP09 fault, NOT BRT03 fault |
-| CVR02       | TRP12 StOn                                     | NOT DTC02, NOT TRP12 fault, NOT BRT03 fault |
+| Equipamento | Nome funcional          | Habilita AUTO quando               | Permissivo adicional                        |
+|-------------|-------------------------|------------------------------------|---------------------------------------------|
+| TRP13       | SAÍDA PNR03             | PNR03 StOn                         | —                                           |
+| TRP10       | SAÍDA BRT03             | PNR03 StOn                         | —                                           |
+| TRP11       | AUXILIAR BRT03          | PNR03 StOn                         | —                                           |
+| BRT03       | Britador Cônico         | TRP10 StOn                         | NOT BRT04 StOn                              |
+| PNR02       | Peneira BRT03           | BRT03 StOn AND TRP09 StOn          | NOT TRP09 fault, NOT BRT03 fault            |
+| TRP12       | ALIMENTAÇÃO BRT03       | BRT03 StOn                         | NOT BRT03 fault, NOT DTC02                  |
+| CVR02       | Calha Alim. Linha B     | TRP12 StOn                         | NOT DTC02, NOT TRP12 fault, NOT BRT03 fault |
 
 **Linha C — BRT04 (VSI)**
 
-| Equipamento | Habilita AUTO quando downstream estiver `StOn` | Permissivo adicional             |
-|-------------|------------------------------------------------|----------------------------------|
-| BRT04       | TRP14 StOn                                     | NOT BRT02 StOn, NOT BRT03 StOn   |
-| PNR03       | BRT04 StOn AND TRP13 StOn                      | NOT TRP13 fault, NOT BRT04 fault |
-| CVR03       | TRP16 StOn                                     | NOT DTC03, NOT TRP16 fault, NOT BRT04 fault |
+| Equipamento | Nome funcional          | Habilita AUTO quando               | Permissivo adicional                        |
+|-------------|-------------------------|------------------------------------|---------------------------------------------|
+| TRP14       | SAÍDA BRT04 A           | PNR04 StOn                         | NOT PNR04 fault                             |
+| TRP15       | SAÍDA BRT04 B           | PNR04 StOn                         | NOT PNR04 fault                             |
+| BRT04       | Britador VSI            | TRP14 StOn                         | NOT BRT02 StOn, NOT BRT03 StOn              |
+| PNR03       | Peneira BRT04 (VSI)     | BRT04 StOn AND TRP13 StOn          | NOT TRP13 fault, NOT BRT04 fault            |
+| TRP16       | ALIMENTAÇÃO BRT04       | BRT04 StOn                         | NOT BRT04 fault, NOT DTC03                  |
+| CVR03       | Calha Alim. Linha C     | TRP16 StOn                         | NOT DTC03, NOT TRP16 fault, NOT BRT04 fault |
 
-**Peneira de Expedição**
+**Linha D — Expedição**
 
-| Equipamento | Habilita AUTO quando downstream estiver `StOn` | Permissivo adicional                   |
-|-------------|------------------------------------------------|----------------------------------------|
-| PNR04       | TRP17 StOn AND TRP18 StOn AND TRP19 StOn       | NOT TRP17/18/19 fault (intertrav. triplo) |
+| Equipamento | Nome funcional          | Habilita AUTO quando               | Permissivo adicional                           |
+|-------------|-------------------------|------------------------------------|------------------------------------------------|
+| TRP17       | PRODUTO FINAL A         | PNR04 StOn                         | NOT PNR04 fault                                |
+| TRP18       | PRODUTO FINAL B         | PNR04 StOn                         | NOT PNR04 fault                                |
+| TRP19       | PRODUTO FINAL C         | PNR04 StOn                         | NOT PNR04 fault                                |
+| PNR04       | Peneira de Expedição    | TRP17 StOn AND TRP18 StOn AND TRP19 StOn | NOT TRP17/18/19 fault (intertrav. triplo) |
 
 ### Lógica de Detectores de Metal
 
@@ -587,12 +601,6 @@ os tags físicos corretos (`%I13.6`, `%I13.7`, `%I14.0`).
 ---
 
 ## 12. O que NÃO Inferir
-
-### Topologia completa dos transportadores (TRP08–TRP19)
-
-Apenas TRP06 e TRP07 foram lidos integralmente no código. Os demais seguem o
-mesmo padrão Map_In/Process/Core/Map_Out, mas os interlocks exatos e a qual
-equipamento cada TRP se conecta a jusante precisam ser verificados no código.
 
 ### EMERGÊNCIA EXTERNA PV04 (%I13.5)
 
