@@ -1,0 +1,105 @@
+DATA_BLOCK "IHM_DB"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+NON_RETAIN
+   VAR 
+      Comandos : Struct
+         CmdTesteSirene : Bool;
+         CmdDesabilitaSincParam : Bool;
+      END_STRUCT;
+      Status : Struct
+         Sirene : Struct
+            StSda : Bool;
+            StStep : Int;
+            StTempoRestante : Time;
+            StValidadeRestante : Time;
+         END_STRUCT;
+         StErros : Array[0..4] of Word;
+      END_STRUCT;
+   END_VAR
+   VAR RETAIN
+      Parametros : Struct
+         Tempos_Processo : Struct
+            ParPrepTime : Struct   // Watchdog (Timeout)
+               BRITADORES  : "UDT_TIME_BRITADORES";
+            END_STRUCT;
+            ParPreLubeTime : Struct   // Delay de Processo (Espera Obrigatória)
+               BRITADORES : Struct
+                  BR04 : Time;   // Default: 1m
+               END_STRUCT;
+            END_STRUCT;
+            ParSdaTime  : "UDT_TIME_PLANTA";   // Watchdog (Timeout)
+            ParSdaDelayFalha  : "UDT_TIME_PLANTA";   // Watchdog (Filtro Anti-Flicker)
+            ParSdaDelayIdling : Struct   // Delay de Processo (Espera Obrigatória)
+               BRITADORES  : "UDT_TIME_BRITADORES";
+            END_STRUCT;
+         END_STRUCT;
+         Sirene : Struct
+            ParTempoToque : Time;   // Default: 60s
+            ParTempoMaxPartida : Time;
+            ParTempoValidade : Time;   // Default: 30m
+         END_STRUCT;
+      END_STRUCT;
+   END_VAR
+
+
+BEGIN
+   Parametros.Tempos_Processo.ParPrepTime.BRITADORES.BR02 := T#5m;
+   Parametros.Tempos_Processo.ParPrepTime.BRITADORES.BR03 := T#5m;
+   Parametros.Tempos_Processo.ParPrepTime.BRITADORES.BR04 := T#5m;
+   Parametros.Tempos_Processo.ParPreLubeTime.BRITADORES.BR04 := T#1m;
+   Parametros.Tempos_Processo.ParSdaTime.BRITADORES.BR02 := T#15s;
+   Parametros.Tempos_Processo.ParSdaTime.BRITADORES.BR03 := T#15s;
+   Parametros.Tempos_Processo.ParSdaTime.BRITADORES.BR04 := T#25s;
+   Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP06 := T#5s;
+   Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP07 := T#5s;
+   Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP08 := T#5s;
+   Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP09 := T#5s;
+   Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP10 := T#5s;
+   Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP11 := T#5s;
+   Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP12 := T#5s;
+   Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP13 := T#5s;
+   Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP14 := T#5s;
+   Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP15 := T#5s;
+   Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP16 := T#5s;
+   Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP17 := T#5s;
+   Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP18 := T#5s;
+   Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP19 := T#5s;
+   Parametros.Tempos_Processo.ParSdaTime.PENEIRAS.PNR02 := T#5s;
+   Parametros.Tempos_Processo.ParSdaTime.PENEIRAS.PNR03 := T#5s;
+   Parametros.Tempos_Processo.ParSdaTime.PENEIRAS.PNR04 := T#5s;
+   Parametros.Tempos_Processo.ParSdaTime.CALHAS.CVR01 := T#5s;
+   Parametros.Tempos_Processo.ParSdaTime.CALHAS.CVR02 := T#5s;
+   Parametros.Tempos_Processo.ParSdaTime.CALHAS.CVR03 := T#5s;
+   Parametros.Tempos_Processo.ParSdaDelayFalha.BRITADORES.BR02 := T#2s;
+   Parametros.Tempos_Processo.ParSdaDelayFalha.BRITADORES.BR03 := T#2s;
+   Parametros.Tempos_Processo.ParSdaDelayFalha.BRITADORES.BR04 := T#2s;
+   Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP06 := T#2s;
+   Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP07 := T#2s;
+   Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP08 := T#2s;
+   Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP09 := T#2s;
+   Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP10 := T#2s;
+   Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP11 := T#2s;
+   Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP12 := T#2s;
+   Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP13 := T#2s;
+   Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP14 := T#2s;
+   Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP15 := T#2s;
+   Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP16 := T#2s;
+   Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP17 := T#2s;
+   Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP18 := T#2s;
+   Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP19 := T#2s;
+   Parametros.Tempos_Processo.ParSdaDelayFalha.PENEIRAS.PNR02 := T#2s;
+   Parametros.Tempos_Processo.ParSdaDelayFalha.PENEIRAS.PNR03 := T#2s;
+   Parametros.Tempos_Processo.ParSdaDelayFalha.PENEIRAS.PNR04 := T#2s;
+   Parametros.Tempos_Processo.ParSdaDelayFalha.CALHAS.CVR01 := T#2s;
+   Parametros.Tempos_Processo.ParSdaDelayFalha.CALHAS.CVR02 := T#2s;
+   Parametros.Tempos_Processo.ParSdaDelayFalha.CALHAS.CVR03 := T#2s;
+   Parametros.Tempos_Processo.ParSdaDelayIdling.BRITADORES.BR02 := T#3m;
+   Parametros.Tempos_Processo.ParSdaDelayIdling.BRITADORES.BR03 := T#3m;
+   Parametros.Tempos_Processo.ParSdaDelayIdling.BRITADORES.BR04 := T#5m;
+   Parametros.Sirene.ParTempoToque := T#60s;
+   Parametros.Sirene.ParTempoMaxPartida := T#5m;
+   Parametros.Sirene.ParTempoValidade := T#30m;
+
+END_DATA_BLOCK
+

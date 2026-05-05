@@ -1,0 +1,312 @@
+FUNCTION_BLOCK "EL_4St_Fct"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR 
+      EL : "EL_4St_UDT";
+   END_VAR
+
+   VAR_TEMP 
+      tmpFalha : Bool;
+      TransitionTo : Struct
+         StOn : Bool;
+         StOff : Bool;
+         StStarting : Bool;
+         StFault : Bool;
+      END_STRUCT;
+      tmpSireneOk : Bool;
+      tmpHabilita : Bool;
+   END_VAR
+
+
+BEGIN
+	// ==============================================================================
+	// BLOCO DE CONTROLE: ACIONAMENTO SIMPLES (4 ESTADOS)
+	// APLICAÇÃO: Motores diretos, Bombas simples, Esteiras, Exaustores.
+	// PROTEÇÕES INCLUSAS: Anti-Flicker de Entradas, Fail-Fast e Reset Anti-Memória.
+	// ==============================================================================
+	
+	REGION Init
+	    // ==========================================================================
+	    // 1. SNAPSHOTS (TRAVAMENTO DE ENTRADAS)
+	    // Lemos as entradas físicas apenas uma vez no início do ciclo para evitar 
+	    // que o estado de um sensor mude no meio do processamento (flicker).
+	    // ==========================================================================
+	    
+	    // Snapshot das falhas exclusivas deste motor (Ex: Relé Térmico/Disjuntor-Motor)
+	    #tmpFalha := #EL.EnFDispFalha;
+	    
+	    // Snapshot de sinais de alerta pré-partida
+	    #tmpSireneOk := "CONTROLE_STATUS_DB".StSireneOk;
+	    
+	    // Permissivo de Processo (Ex: Parada de emergência, chave de desalinhamento)
+	    #tmpHabilita := #EL.EnHabilita;
+	END_REGION
+	
+	// ==============================================================================
+	// 2. LIMPEZA DAS FLAGS DE TRANSIÇÃO
+	// Garante que nenhuma transição do ciclo anterior fique "presa" na memória.
+	// ==============================================================================
+	#TransitionTo.StOff := 0;
+	#TransitionTo.StStarting := 0;
+	#TransitionTo.StOn := 0;
+	#TransitionTo.StFault := 0;
+	
+	REPEAT
+	    REGION State_Safety_Net
+	        // ======================================================================
+	        // 3. REDE DE SEGURANÇA (COLD START / RECOVERY)
+	        // Se o CLP for reiniciado ou o bloco perder o referencial, força o repouso.
+	        // ======================================================================
+	        IF NOT #EL.StOn AND NOT #EL.StStarting AND NOT #EL.StOff AND NOT #EL.StFault AND
+	            NOT #TransitionTo.StOn AND NOT #TransitionTo.StOff AND
+	            NOT #TransitionTo.StStarting AND NOT #TransitionTo.StFault
+	        THEN
+	            #EL.StOff := 1;
+	            #EL.StStep := 0; // 0: Desligado em repouso
+	        END_IF;
+	    END_REGION
+	    
+	    REGION StOff
+	        // ======================================================================
+	        // ESTADO 0: MÁQUINA DESLIGADA E EM REPOUSO
+	        // ======================================================================
+	        
+	        // --- TRANSIÇÃO DE ENTRADA ---
+	        IF #TransitionTo.StOff THEN
+	            #TransitionTo.StOff := 0;
+	            #EL.StOff := 1;
+	            #EL.StOn := 0;
+	            #EL.StStarting := 0;
+	            #EL.StFault := 0;
+	            
+	            // --- CICLO DO ESTADO ---
+	        ELSIF #EL.StOff THEN
+	            // Prioridade Máxima: Falha de hardware com a máquina parada
+	            IF #tmpFalha THEN
+	                #EL.StOff := 0;
+	                #TransitionTo.StFault := 1;
+	                
+	                // Comando de Partida recebido da IHM/Botão
+	            ELSIF #EL.CmdOn THEN
+	                IF #tmpHabilita THEN
+	                    #EL.StOff := 0;
+	                    #TransitionTo.StStarting := 1;
+	                ELSE
+	                    // Bloqueia a partida e avisa o operador
+	                    #EL.StStep := 7; // 7: Partida bloqueada: Falta permissivo
+	                END_IF;
+	                
+	            ELSE
+	                // UX IHM: Mantém na tela apenas os status válidos de aviso de parada.
+	                IF #EL.StStep <> 5 AND #EL.StStep <> 6 AND #EL.StStep <> 7 THEN
+	                    #EL.StStep := 0;
+	                END_IF;
+	            END_IF;
+	        END_IF;
+	    END_REGION
+	    
+	    REGION StStarting
+	        // ======================================================================
+	        // ESTADO 1: PREPARAÇÃO E PARTIDA
+	        // Aguarda a Sirene de alerta e confirmação mecânica do motor.
+	        // ======================================================================
+	        
+	        // --- TRANSIÇÃO DE ENTRADA ---
+	        IF #TransitionTo.StStarting THEN
+	            #TransitionTo.StStarting := 0;
+	            #EL.StStarting := 1;
+	            #EL.StOff := 0;
+	            
+	            // Carrega Watchdog da Sirene (Tempo programado + + o tempo mecânico)
+	            #EL.SdaTime := "SIRENE_DB".ParTempoToque + #EL.ParSdaTime;
+	            #EL.StStep := 1; // 1: Iniciando sequência...
+	            
+	            // --- CICLO DO ESTADO ---
+	        ELSIF #EL.StStarting THEN
+	            
+	            // 1. CAMADA DE PROTEÇÃO (Abortos imediatos)
+	            IF #tmpFalha THEN
+	                #EL.StStarting := 0;
+	                #TransitionTo.StFault := 1;
+	                
+	            ELSIF #EL.CmdOff THEN
+	                #EL.StStep := 5; // 5: Desligado por comando
+	                #EL.StStarting := 0;
+	                #TransitionTo.StOff := 1;
+	                
+	            ELSIF NOT #tmpHabilita THEN
+	                #EL.StStep := 6; // 6: Desligado por perder permissivo
+	                #EL.StStarting := 0;
+	                #TransitionTo.StOff := 1;
+	                
+	                // 2. CAMADA DE SEQUENCIAMENTO NORMAL
+	            ELSE
+	                // Decrementa o Watchdog do passo atual
+	                #EL.SdaTime := #EL.SdaTime - "Sys_DB".OutCycleTime;
+	                
+	                // PASSO A: Aguardando a Sirene de alerta concluir
+	                IF NOT #tmpSireneOk THEN
+	                    #EL.StStep := 2; // 2: Aguardando status OK da sirene
+	                    
+	                    IF #EL.SdaTime <= T#0ms THEN
+	                        #EL.StStep := 9; // 9: Falha de Partida: Watchdog da Sirene
+	                        #EL.StStarting := 0;
+	                        #TransitionTo.StFault := 1;
+	                    END_IF;
+	                    
+	                    // PASSO B: Sirene OK, aguardando confirmação do motor principal
+	                ELSIF #tmpSireneOk THEN
+	                    
+	                    IF #EL.StStep <> 3 THEN
+	                        #EL.SdaTime := #EL.ParSdaTime;
+	                        #EL.StStep := 3; // 3: Sirene OK, aguardando feedback do motor
+	                    END_IF;
+	                    
+	                    // FAIL-FAST: Verifica timeout antes de sucesso
+	                    IF #EL.SdaTime <= T#0ms THEN
+	                        #EL.StStep := 10; // 10: Falha de Partida: Timeout do Motor
+	                        #EL.StStarting := 0;
+	                        #TransitionTo.StFault := 1;
+	                        
+	                        // SUCESSO: Contatora/Inversor confirmou o giro do motor
+	                    ELSIF #EL.EnFLigado THEN
+	                        #EL.StStarting := 0;
+	                        #TransitionTo.StOn := 1;
+	                    END_IF;
+	                END_IF;
+	            END_IF;
+	        END_IF;
+	    END_REGION
+	    
+	    REGION StOn
+	        // ======================================================================
+	        // ESTADO 2: MÁQUINA EM OPERAÇÃO NORMAL
+	        // Regime produtivo contínuo. Monitoramento de intertravamentos e feedback.
+	        // ======================================================================
+	        
+	        // --- TRANSIÇÃO DE ENTRADA ---
+	        IF #TransitionTo.StOn THEN
+	            #TransitionTo.StOn := 0;
+	            #EL.StOn := 1;
+	            #EL.StStarting := 0;
+	            #EL.StStep := 4; // 4: Em operação normal
+	            
+	            // --- CICLO DO ESTADO ---
+	        ELSIF #EL.StOn THEN
+	            IF #tmpFalha THEN
+	                #EL.StOn := 0;
+	                #TransitionTo.StFault := 1;
+	                
+	            ELSIF #EL.CmdOff THEN
+	                #EL.StStep := 5;
+	                #EL.StOn := 0;
+	                #TransitionTo.StOff := 1;
+	                
+	            ELSIF NOT #tmpHabilita THEN
+	                #EL.StStep := 6;
+	                #EL.StOn := 0;
+	                #TransitionTo.StOff := 1;
+	                
+	                // MONITORAMENTO: Tolera piscas rápidos do sensor mecânico pelo tempo "SdaDelayFalha"
+	            ELSIF NOT #EL.EnFLigado THEN
+	                #EL.SdaDelayFalha := #EL.SdaDelayFalha - "Sys_DB".OutCycleTime;
+	                IF #EL.SdaDelayFalha <= T#0ms THEN
+	                    #EL.StStep := 11; // 11: Falha em Operação: Perda de Feedback mecânico
+	                    #EL.StOn := 0;
+	                    #TransitionTo.StFault := 1;
+	                END_IF;
+	                
+	                // Mantém o tanque de tolerância cheio se o sensor estiver OK
+	            ELSIF #EL.EnFLigado THEN
+	                #EL.SdaDelayFalha := #EL.ParSdaDelayFalha;
+	            END_IF;
+	        END_IF;
+	    END_REGION
+	    
+	    REGION StFault
+	        // ======================================================================
+	        // ESTADO 3: FALHA ATIVA (AGUARDANDO AÇÃO DO OPERADOR)
+	        // ======================================================================
+	        
+	        // --- TRANSIÇÃO DE ENTRADA ---
+	        IF #TransitionTo.StFault THEN
+	            #TransitionTo.StFault := 0;
+	            
+	            // Trava para somar no contador apenas 1 vez por falha
+	            IF NOT #EL.StFault THEN
+	                #EL.SdaCntFalha += DINT#1;
+	                #EL.StFault := 1;
+	                #EL.StOff := 0;
+	                #EL.StOn := 0;
+	                #EL.StStarting := 0;
+	                
+	                // Protege os status específicos de processo (9, 10 e 11) definidos nas etapas
+	                IF #EL.StStep <> 9 AND #EL.StStep <> 10 AND #EL.StStep <> 11 THEN
+	                    #EL.StStep := 8; // 8: Falha de Segurança/Hardware
+	                END_IF;
+	            END_IF;
+	            
+	            // --- CICLO DO ESTADO (RESET ANTI-MEMÓRIA) ---
+	        ELSIF #EL.StFault THEN
+	            // Exige que o disjuntor/relé térmico tenha sido rearmado fisicamente 
+	            // ANTES do comando da IHM ser aceito.
+	            IF #EL.CmdFalhaReset AND NOT #tmpFalha THEN
+	                #EL.StFault := 0;
+	                #TransitionTo.StOff := 1;
+	            END_IF;
+	        END_IF;
+	    END_REGION
+	    
+	UNTIL NOT #TransitionTo.StOn AND NOT #TransitionTo.StOff AND
+	    NOT #TransitionTo.StStarting AND NOT #TransitionTo.StFault
+	END_REPEAT;
+	
+	REGION Global End
+	    // ==========================================================================
+	    // SINALIZAÇÃO VISUAL E LIMPEZA DE COMANDOS
+	    // ==========================================================================
+	    
+	    // Pisca a lâmpada/IHM a 2Hz enquanto aguarda reconhecimento de falha
+	    #EL.SdaFalhaReset := #EL.StFault AND "Clock_2Hz";
+	    
+	    // Limpeza rigorosa de comandos transitórios (Impede Efeito Memória)
+	    #EL.CmdOn := 0;
+	    #EL.CmdOff := 0;
+	    #EL.CmdFalhaReset := 0;
+	    
+	    // ==========================================================================
+	    // ACIONAMENTO DA SAÍDA FÍSICA (EQUAÇÃO COMBINACIONAL)
+	    // ==========================================================================
+	    // O motor opera se estiver no estado StOn OU se a Sirene já liberou a partida.
+	    // É condicionado sempre à ausência de falhas e presença de permissivos gerais.
+	    #EL.SdaF := (#EL.StOn OR (#EL.StStarting AND #tmpSireneOk))
+	    AND NOT #tmpFalha
+	    AND NOT #EL.StFault
+	    AND #tmpHabilita;
+	    
+	END_REGION
+	
+	REGION Tabela de referência de Status
+	    (*
+	     ==========================================================================
+	     TABELA DE STATUS REFERÊNCIA (ACIO. SIMPLES - 4 ESTADOS)
+	     ==========================================================================       
+	       |ID    |Categoria   |Descrição 
+	     ==|======|============|================================= 
+	       |0     |Operação    |Desligado em repouso
+	       |1     |Operação    |Iniciando sequência...
+	       |2     |Operação    |Aguardando status OK da sirene
+	       |3     |Operação    |Sirene OK, aguardando feedback do motor
+	       |4     |Operação    |Em operação normal
+	       |5     |Aviso       |Desligado por comando
+	       |6     |Aviso       |Desligado por perder o permissivo
+	       |7     |Aviso       |Partida bloqueada: Falta permissivo
+	       |8     |Falha       |Falha de Segurança/Hardware (Térmico/Disjuntor)
+	       |9     |Falha       |Falha de Partida: Watchdog da Sirene
+	       |10    |Falha       |Falha de Partida: Timeout do Motor
+	       |11    |Falha       |Falha em Operação: Perda de Feedback mecânico
+	     ==========================================================================
+	 *)   
+	END_REGION
+END_FUNCTION_BLOCK
+

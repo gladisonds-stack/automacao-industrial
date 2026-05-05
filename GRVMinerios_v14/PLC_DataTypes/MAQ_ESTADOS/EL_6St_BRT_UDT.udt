@@ -1,0 +1,45 @@
+TYPE "EL_6St_BRT_UDT"
+VERSION : 0.1
+   STRUCT
+      CmdFalhaReset : Bool;
+      CmdOn : Bool;
+      CmdOff : Bool;
+      EnHabilita : Bool;
+      EnManual : Bool;
+      EnTempOleoOK : Bool;
+      EnNivelOleoOK : Bool;
+      EnTempAltaOK : Bool;
+      EnTempBaixaOK : Bool;
+      EnTempMediaAlta : Bool;
+      EnFLigado : Bool;
+      EnFLigado_2 : Bool;
+      EnFDispFalha : Bool;
+      EnFDispFalha_BombaOleo : Bool;
+      StOff : Bool := true;
+      StPreparing : Bool;
+      StStarting : Bool;
+      StOn : Bool;
+      StIdling : Bool;
+      StFault : Bool;
+      SdaF : Bool;
+      SdaF_2 : Bool;
+      SdaAquecedor : Bool;
+      SdaVentoinha : Bool;
+      SdaTurbinaPust : Bool;
+      SdaCntFalha : DInt;
+      SdaFalhaReset : Bool;
+      SdaTime : Time;
+      SdaDelayFalha : Time;
+      SdaDelayIdling : Time;
+      ParPrepTime : Time := T#5m;
+      ParSdaTime : Time := T#15s;
+      ParSdaDelayFalha : Time := T#2s;
+      ParSdaDelayIdling : Time := T#3m;
+      StLubeOverrunTime : Time;
+      StBotao : Bool;
+      StAnteriorBotao : Bool;
+      StHidrosetPress : Real;
+      StStep : UInt;
+   END_STRUCT;
+
+END_TYPE

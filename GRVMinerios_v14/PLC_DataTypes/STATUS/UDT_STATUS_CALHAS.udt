@@ -1,0 +1,10 @@
+TYPE "UDT_STATUS_CALHAS"
+VERSION : 0.1
+   STRUCT
+      CVR01 : Bool;
+      CVR02 : Bool;
+      CVR03 : Bool;
+   END_STRUCT;
+
+END_TYPE
+

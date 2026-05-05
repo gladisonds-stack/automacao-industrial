@@ -1,0 +1,9 @@
+TYPE "UDT_TIME_CALHAS"
+VERSION : 0.1
+   STRUCT
+      CVR01 : Time;
+      CVR02 : Time;
+      CVR03 : Time;
+   END_STRUCT;
+
+END_TYPE

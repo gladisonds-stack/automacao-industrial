@@ -8,7 +8,10 @@
       "Bash(touch /d/gds/vscode/automacao_industrial/GRVMinerios_v14/HMI_KTP900/Screens/00_Home.md /d/gds/vscode/automacao_industrial/GRVMinerios_v14/HMI_KTP900/Screens/01_Falhas_ativas.md /d/gds/vscode/automacao_industrial/GRVMinerios_v14/HMI_KTP900/Screens/02_Historico_de_Falhas.md /d/gds/vscode/automacao_industrial/GRVMinerios_v14/HMI_KTP900/Screens/03_IOs_1.md /d/gds/vscode/automacao_industrial/GRVMinerios_v14/HMI_KTP900/Screens/04_IOs_2.md /d/gds/vscode/automacao_industrial/GRVMinerios_v14/HMI_KTP900/Screens/05_Monitoramento_Hidroset.md /d/gds/vscode/automacao_industrial/GRVMinerios_v14/HMI_KTP900/Screens/06_Parametros_Sirene.md /d/gds/vscode/automacao_industrial/GRVMinerios_v14/HMI_KTP900/Screens/07_Parametros_Sdatime.md /d/gds/vscode/automacao_industrial/GRVMinerios_v14/HMI_KTP900/Screens/08_Parametros_Sdadelayfalha.md /d/gds/vscode/automacao_industrial/GRVMinerios_v14/HMI_KTP900/Screens/09_Parametros_tempo_britadores.md)",
       "Bash(git add *)",
       "Bash(git commit *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(Get-ChildItem -Path \"d:\\\\gds\\\\vscode\\\\automacao_industrial\\\\GRVMinerios_v14\" -Recurse -File)",
+      "PowerShell(Get-ChildItem -Path \"d:\\\\gds\\\\vscode\\\\automacao_industrial\\\\GRVMinerios_v14\" -Recurse -File | ForEach-Object { [PSCustomObject]@{FullPath=$_.FullName; Size=$_.Length} } | Format-Table -AutoSize)",
+      "Bash(xargs wc *)"
     ]
   }
 }

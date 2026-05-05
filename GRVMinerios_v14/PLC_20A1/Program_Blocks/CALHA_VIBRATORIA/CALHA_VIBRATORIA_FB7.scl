@@ -1,0 +1,141 @@
+FUNCTION_BLOCK "CALHA VIBRATÓRIA"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR 
+      CVR01 : "EL_4St_Fct";
+      CVR02 : "EL_4St_Fct";
+      CVR03 : "EL_4St_Fct";
+   END_VAR
+
+   VAR_TEMP 
+      PERMISSIVOS_CRV01 : Bool;
+      PERMISSIVOS_CRV02 : Bool;
+      PERMISSIVOS_CRV03 : Bool;
+   END_VAR
+
+
+BEGIN
+	// ==============================================================================
+	// BLOCO: FB7 - GESTÃO DE CALHAS VIBRATÓRIAS (CVR01, 02 e 03)
+	// ARQUITETURA: Encapsulamento em Regions (Map_In -> Process -> Core -> Map_Out)
+	// ==============================================================================
+	
+	REGION "CVR 01 - ALIMENTAÇÃO LINHA A (BRT02)"
+	    REGION "1. MAP_IN"
+	        #CVR01.EL.StBotao := "LIGA CALHA VIBRATÓRIA 01";
+	        #CVR01.EL.CmdFalhaReset := "RESET MESA DE CONTROLE";
+	        #CVR01.EL.EnFLigado := "CALHA VIBRATÓRIA 01 LIGADA";
+	        #CVR01.EL.EnFDispFalha := "FALHA CALHA VIBRATÓRIA 01";
+	    END_REGION
+	    
+	    REGION "2. PROCESS"
+	        #PERMISSIVOS_CRV01 := "GERAL_EMERGENCIA_OK" AND
+	        NOT "CONTROLE_STATUS_DB".StFalhaDetectores.DTC01 AND // Corte por Sucata
+	        NOT "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP06 AND
+	        NOT "CONTROLE_STATUS_DB".StFaultGlobal.BRITADORES.BRT02;
+	        
+	        #CVR01.EL.EnHabilita := ("SELEÇÃO MANUAL" AND #PERMISSIVOS_CRV01) OR
+	        ("SELEÇÃO AUTOMÁTICO" AND #PERMISSIVOS_CRV01 AND "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP06);
+	        
+	        IF #CVR01.EL.StBotao AND NOT #CVR01.EL.StAnteriorBotao THEN
+	            IF #CVR01.EL.StOff THEN
+	                #CVR01.EL.CmdOn := true;
+	            ELSE
+	                #CVR01.EL.CmdOff := true;
+	            END_IF;
+	        END_IF;
+	        #CVR01.EL.StAnteriorBotao := #CVR01.EL.StBotao;
+	    END_REGION
+	    
+	    REGION "3. CORE e 4. MAP_OUT"
+	        #CVR01();
+	        "HABILITA CALHA VIBRATÓRIA 01" := #CVR01.EL.SdaF;
+	        "ACIONA CALHA VIBRATÓRIA 01" := #CVR01.EL.SdaF;
+	    END_REGION
+	END_REGION
+	
+	REGION "CVR 02 - ALIMENTAÇÃO LINHA B (BRT03)"
+	    REGION "1. MAP_IN"
+	        #CVR02.EL.StBotao := "LIGA CALHA VIBRATÓRIA 02";
+	        #CVR02.EL.CmdFalhaReset := "RESET MESA DE CONTROLE";
+	        #CVR02.EL.EnFLigado := "CALHA VIBRATÓRIA 02 LIGADA";
+	        #CVR02.EL.EnFDispFalha := "FALHA CALHA VIBRATÓRIA 02";
+	    END_REGION
+	    
+	    REGION "2. PROCESS"
+	        #PERMISSIVOS_CRV02 := "GERAL_EMERGENCIA_OK" AND
+	        NOT "CONTROLE_STATUS_DB".StFalhaDetectores.DTC02 AND // Corte por Sucata
+	        NOT "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP12 AND
+	        NOT "CONTROLE_STATUS_DB".StFaultGlobal.BRITADORES.BRT03;
+	        
+	        #CVR02.EL.EnHabilita := ("SELEÇÃO MANUAL" AND #PERMISSIVOS_CRV02) OR
+	        ("SELEÇÃO AUTOMÁTICO" AND #PERMISSIVOS_CRV02 AND "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP12);
+	        
+	        IF #CVR02.EL.StBotao AND NOT #CVR02.EL.StAnteriorBotao THEN
+	            IF #CVR02.EL.StOff THEN
+	                #CVR02.EL.CmdOn := true;
+	            ELSE
+	                #CVR02.EL.CmdOff := true;
+	            END_IF;
+	        END_IF;
+	        #CVR02.EL.StAnteriorBotao := #CVR02.EL.StBotao;
+	    END_REGION
+	    
+	    REGION "3. CORE e 4. MAP_OUT"
+	        #CVR02();
+	        "HABILITA CALHA VIBRATÓRIA 02" := #CVR02.EL.SdaF;
+	        "ACIONA CALHA VIBRATÓRIA 02" := #CVR02.EL.SdaF;
+	    END_REGION
+	END_REGION
+	
+	REGION "CVR 03 - ALIMENTAÇÃO LINHA C (VSI 04)"
+	    REGION "1. MAP_IN"
+	        #CVR03.EL.StBotao := "LIGA CALHA VIBRATÓRIA 03";
+	        #CVR03.EL.CmdFalhaReset := "RESET MESA DE CONTROLE";
+	        #CVR03.EL.EnFLigado := "CALHA VIBRATÓRIA 03 LIGADA";
+	        #CVR03.EL.EnFDispFalha := "FALHA CALHA VIBRATÓRIA 03";
+	    END_REGION
+	    
+	    REGION "2. PROCESS"
+	        #PERMISSIVOS_CRV03 := "GERAL_EMERGENCIA_OK" AND
+	        NOT "CONTROLE_STATUS_DB".StFalhaDetectores.DTC03 AND // Corte por Sucata
+	        NOT "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP16 AND
+	        NOT "CONTROLE_STATUS_DB".StFaultGlobal.BRITADORES.BRT04;
+	        
+	        #CVR03.EL.EnHabilita := ("SELEÇÃO MANUAL" AND #PERMISSIVOS_CRV03) OR
+	        ("SELEÇÃO AUTOMÁTICO" AND #PERMISSIVOS_CRV03 AND "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP16);
+	        
+	        IF #CVR03.EL.StBotao AND NOT #CVR03.EL.StAnteriorBotao THEN
+	            IF #CVR03.EL.StOff THEN
+	                #CVR03.EL.CmdOn := true;
+	            ELSE
+	                #CVR03.EL.CmdOff := true;
+	            END_IF;
+	        END_IF;
+	        #CVR03.EL.StAnteriorBotao := #CVR03.EL.StBotao;
+	    END_REGION
+	    
+	    REGION "3. CORE e 4. MAP_OUT"
+	        #CVR03();
+	        "HABILITA CALHA VIBRATÓRIA 03" := #CVR03.EL.SdaF;
+	        "ACIONA CALHA VIBRATÓRIA 03" := #CVR03.EL.SdaF;
+	    END_REGION
+	END_REGION
+	
+	REGION "ESCREVENDO STATUS GERAL"
+	    "CONTROLE_STATUS_DB".StSomaFalhas.StFalhaCalhas := #CVR01.EL.StFault OR #CVR02.EL.StFault OR #CVR03.EL.StFault;
+	    
+	    "CONTROLE_STATUS_DB".StStartingGlobal.CALHAS.CVR01 := #CVR01.EL.StStarting;
+	    "CONTROLE_STATUS_DB".StOnGlobal.CALHAS.CVR01 := #CVR01.EL.StOn;
+	    "CONTROLE_STATUS_DB".StFaultGlobal.CALHAS.CVR01 := #CVR01.EL.StFault;
+	    
+	    "CONTROLE_STATUS_DB".StStartingGlobal.CALHAS.CVR02 := #CVR02.EL.StStarting;
+	    "CONTROLE_STATUS_DB".StOnGlobal.CALHAS.CVR02 := #CVR02.EL.StOn;
+	    "CONTROLE_STATUS_DB".StFaultGlobal.CALHAS.CVR02 := #CVR02.EL.StFault;
+	    
+	    "CONTROLE_STATUS_DB".StStartingGlobal.CALHAS.CVR03 := #CVR03.EL.StStarting;
+	    "CONTROLE_STATUS_DB".StOnGlobal.CALHAS.CVR03 := #CVR03.EL.StOn;
+	    "CONTROLE_STATUS_DB".StFaultGlobal.CALHAS.CVR03 := #CVR03.EL.StFault;
+	END_REGION
+END_FUNCTION_BLOCK
+

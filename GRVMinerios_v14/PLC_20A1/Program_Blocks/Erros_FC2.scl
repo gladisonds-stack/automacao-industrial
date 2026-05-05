@@ -1,0 +1,107 @@
+FUNCTION "Erros" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+
+BEGIN
+	// ==============================================================================
+	// BLOCO: FC2 - GESTÃO DE FALHAS E ALARMES (ERROS)
+	// ARQUITETURA: Consolidação de status e mapeamento para interface (IHM)
+	// ==============================================================================
+	
+	REGION "1. CONSOLIDAÇÃO DE SOMAS PARCIAIS"
+	    // Processamento dos sinais individuais para geração de status de grupo
+	    
+	    // Consolidação dos Detectores de Metal
+	    "CONTROLE_STATUS_DB".StSomaFalhas.StFalhaDetectores := "CONTROLE_STATUS_DB".StFalhaDetectores.DTC01 OR
+	    "CONTROLE_STATUS_DB".StFalhaDetectores.DTC02 OR
+	    "CONTROLE_STATUS_DB".StFalhaDetectores.DTC03;
+	END_REGION
+	
+	REGION "2. MAPEAMENTO DE ALARMES PARA IHM (WORD STATUS)"
+	    
+	    // --- Erros[0]: Peneiras e Transportadores (Parte 1) ---
+	    "IHM_DB".Status.StErros[0].%X0 := "CONTROLE_STATUS_DB".StFaultGlobal.PENEIRAS.PNR02;        // FALHA PENEIRA VIBRATÓRIA 02
+	    "IHM_DB".Status.StErros[0].%X1 := "CONTROLE_STATUS_DB".StFaultGlobal.PENEIRAS.PNR03;        // FALHA PENEIRA VIBRATÓRIA 03
+	    "IHM_DB".Status.StErros[0].%X2 := "CONTROLE_STATUS_DB".StFaultGlobal.PENEIRAS.PNR04;        // FALHA PENEIRA VIBRATÓRIA 04
+	    "IHM_DB".Status.StErros[0].%X3 := "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP06; // FALHA TRANSPORTADOR DE CORREIA 06
+	    "IHM_DB".Status.StErros[0].%X4 := "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP07; // FALHA TRANSPORTADOR DE CORREIA 07
+	    "IHM_DB".Status.StErros[0].%X5 := "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP08; // FALHA TRANSPORTADOR DE CORREIA 08
+	    "IHM_DB".Status.StErros[0].%X6 := "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP09; // FALHA TRANSPORTADOR DE CORREIA 09
+	    "IHM_DB".Status.StErros[0].%X7 := "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP10; // FALHA TRANSPORTADOR DE CORREIA 10
+	    "IHM_DB".Status.StErros[0].%X8 := "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP11; // FALHA TRANSPORTADOR DE CORREIA 11
+	    "IHM_DB".Status.StErros[0].%X9 := "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP12; // FALHA TRANSPORTADOR DE CORREIA 12
+	    "IHM_DB".Status.StErros[0].%X10 := "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP13; // FALHA TRANSPORTADOR DE CORREIA 13
+	    "IHM_DB".Status.StErros[0].%X11 := "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP14; // FALHA TRANSPORTADOR DE CORREIA 14
+	    "IHM_DB".Status.StErros[0].%X12 := "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP15; // FALHA TRANSPORTADOR DE CORREIA 15
+	    "IHM_DB".Status.StErros[0].%X13 := "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP16; // FALHA TRANSPORTADOR DE CORREIA 16
+	    "IHM_DB".Status.StErros[0].%X14 := "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP17; // FALHA TRANSPORTADOR DE CORREIA 17
+	    "IHM_DB".Status.StErros[0].%X15 := "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP18; // FALHA TRANSPORTADOR DE CORREIA 18
+	    
+	    // --- Erros[1]: Transportadores, Calhas, Britadores e Auxiliares ---
+	    "IHM_DB".Status.StErros[1].%X0 := "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP19; // FALHA TRANSPORTADOR DE CORREIA 19
+	    "IHM_DB".Status.StErros[1].%X1 := "CONTROLE_STATUS_DB".StFaultGlobal.CALHAS.CVR01;          // FALHA CALHA VIBRATÓRIA 01
+	    "IHM_DB".Status.StErros[1].%X2 := "CONTROLE_STATUS_DB".StFaultGlobal.CALHAS.CVR02;          // FALHA CALHA VIBRATÓRIA 02
+	    "IHM_DB".Status.StErros[1].%X3 := "CONTROLE_STATUS_DB".StFaultGlobal.CALHAS.CVR03;          // FALHA CALHA VIBRATÓRIA 03
+	    "IHM_DB".Status.StErros[1].%X4 := "CONTROLE_STATUS_DB".StFaultGlobal.BRITADORES.BRT02;      // FALHA BRITADOR 02
+	    "IHM_DB".Status.StErros[1].%X5 := "CONTROLE_STATUS_DB".StFaultGlobal.BRITADORES.BRT03;      // FALHA BRITADOR 03
+	    "IHM_DB".Status.StErros[1].%X6 := "FALHA CONJUNTO LUBRIFICADOR 01";
+	    "IHM_DB".Status.StErros[1].%X7 := "FALHA RADIADOR 01";
+	    "IHM_DB".Status.StErros[1].%X8 := "FALHA RESISTÊNCIA DE AQUECIMENTO 01";
+	    "IHM_DB".Status.StErros[1].%X9 := "FALHA HIDROSET 01";
+	    "IHM_DB".Status.StErros[1].%X10 := "FALHA VENTILADOR 01";
+	    "IHM_DB".Status.StErros[1].%X11 := "FALHA CONJUNTO LUBRIFICAÇÃO 02";
+	    "IHM_DB".Status.StErros[1].%X12 := "FALHA RADIADOR 02";
+	    "IHM_DB".Status.StErros[1].%X13 := "FALHA RESISTÊNCIA DE AQUECIMENTO 02";
+	    "IHM_DB".Status.StErros[1].%X14 := "FALHA HIDROSET 02";
+	    "IHM_DB".Status.StErros[1].%X15 := "FALHA VENTILADOR 02";
+	    
+	    // --- Erros[2]: Britadores, Emergências e Detectores de Metal ---
+	    "IHM_DB".Status.StErros[2].%X0 := "CONTROLE_STATUS_DB".StFaultGlobal.BRITADORES.BRT04;      // FALHA BRITADOR 04
+	    "IHM_DB".Status.StErros[2].%X1 := "FALHA BRITADOR 04 MOTOR 2";
+	    "IHM_DB".Status.StErros[2].%X2 := "EMERGÊNCIA MESA DE CONTROLE";
+	    "IHM_DB".Status.StErros[2].%X3 := "EMERGÊNCIA PAINEL SECUNDÁRIO";
+	    "IHM_DB".Status.StErros[2].%X4 := "EMERGÊNCIA PAINEL BRITADOR VSI";
+	    "IHM_DB".Status.StErros[2].%X5 := "EMERGÊNCIA PAINEL BRITADOR CÔNICO";
+	    "IHM_DB".Status.StErros[2].%X6 := "EMERGÊNCIA EXTERNA BRITADOR CÔNICO 02";
+	    "IHM_DB".Status.StErros[2].%X7 := "EMERGÊNCIA EXTERNA BRITADOR CÔNICO 03";
+	    "IHM_DB".Status.StErros[2].%X8 := "EMERGÊNCIA EXTERNA BRITADOR VSI 04";
+	    "IHM_DB".Status.StErros[2].%X9 := "CONTROLE_STATUS_DB".StFalhaDetectores.DTC01;             // DETECTOR DE METAL TC 06
+	    "IHM_DB".Status.StErros[2].%X10 := "CONTROLE_STATUS_DB".StFalhaDetectores.DTC02;             // DETECTOR DE METAL TC 12
+	    "IHM_DB".Status.StErros[2].%X11 := "CONTROLE_STATUS_DB".StFalhaDetectores.DTC03;             // DETECTOR DE METAL TC 16
+	    
+	END_REGION
+	
+	REGION "3. CONSOLIDAÇÃO DE FALHA GERAL E EMERGÊNCIA"
+	    // Atualização do Status Lógico de Emergência
+	    "CONTROLE_STATUS_DB".StEmergenciaOk := "GERAL_EMERGENCIA_OK";
+	    
+	    // Consolidação Final da Falha Geral da Planta
+	    "CONTROLE_STATUS_DB".StFaultGlobal.GLOBAL :=
+	    NOT "CONTROLE_STATUS_DB".StEmergenciaOk OR
+	    "CONTROLE_STATUS_DB".StFaultGlobal.BRITADORES.BRT02 OR
+	    "CONTROLE_STATUS_DB".StFaultGlobal.BRITADORES.BRT03 OR
+	    "CONTROLE_STATUS_DB".StFaultGlobal.BRITADORES.BRT04 OR
+	    "CONTROLE_STATUS_DB".StFaultGlobal.CALHAS.CVR01 OR
+	    "CONTROLE_STATUS_DB".StFaultGlobal.CALHAS.CVR02 OR
+	    "CONTROLE_STATUS_DB".StFaultGlobal.CALHAS.CVR03 OR
+	    "CONTROLE_STATUS_DB".StFaultGlobal.PENEIRAS.PNR02 OR
+	    "CONTROLE_STATUS_DB".StFaultGlobal.PENEIRAS.PNR03 OR
+	    "CONTROLE_STATUS_DB".StFaultGlobal.PENEIRAS.PNR04 OR
+	    "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP06 OR
+	    "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP07 OR
+	    "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP08 OR
+	    "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP09 OR
+	    "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP10 OR
+	    "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP11 OR
+	    "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP12 OR
+	    "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP13 OR
+	    "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP14 OR
+	    "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP15 OR
+	    "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP16 OR
+	    "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP17 OR
+	    "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP18 OR
+	    "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP19;
+	    
+	END_REGION
+END_FUNCTION
+

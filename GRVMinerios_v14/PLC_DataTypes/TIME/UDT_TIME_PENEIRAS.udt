@@ -1,0 +1,9 @@
+TYPE "UDT_TIME_PENEIRAS"
+VERSION : 0.1
+   STRUCT
+      PNR02 : Time;
+      PNR03 : Time;
+      PNR04 : Time;
+   END_STRUCT;
+
+END_TYPE

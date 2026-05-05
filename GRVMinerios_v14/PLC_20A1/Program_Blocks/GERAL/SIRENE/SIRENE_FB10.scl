@@ -1,0 +1,363 @@
+FUNCTION_BLOCK "SIRENE"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      EnHabilita : Bool;
+      CmdTesteManual : Bool;
+      ParTempoToque : Time;
+      ParTempoMaxPartida : Time;
+      ParTempoValidade : Time;
+   END_VAR
+
+   VAR_OUTPUT 
+      StSireneOk : Bool;
+      CmdSireneFisica : Bool;
+   END_VAR
+
+   VAR 
+      EL : Struct
+         StStep : Int;
+         StOff : Bool;
+         StManual : Bool;
+         StStarting : Bool;
+         StFeedback : Bool;
+         StOn : Bool;
+         TimerToque : Time;
+         TimerValidade : Time;
+      END_STRUCT;
+      TransitionTo : Struct
+         StOff : Bool;
+         StManual : Bool;
+         StStarting : Bool;
+         StFeedback : Bool;
+         StOn : Bool;
+      END_STRUCT;
+      instTimerToque {InstructionName := 'TON_TIME'; LibVersion := '1.0'; S7_SetPoint := 'False'} : TON_TIME;
+      instTimerFeedback {InstructionName := 'TON_TIME'; LibVersion := '1.0'} : TON_TIME;
+      instTimerValidade {InstructionName := 'TON_TIME'; LibVersion := '1.0'} : TON_TIME;
+      statStSireneOk { S7_SetPoint := 'True'} : Bool;
+      statCmdSireneFisica : Bool;
+   END_VAR
+
+   VAR_TEMP 
+      tmpNecessitaSirene : Bool;
+      tmpPlantaEmMovimento : Bool;
+      tmpFalhaDetectada : Bool;
+      tmpCmdTesteManual : Bool;
+      tmpStartDetectado : Bool;
+      tmpHabilita : Bool;
+      tmpFalha : Bool;
+      tmpCmdTeste : Bool;
+      tmpEnableManual : Bool;
+   END_VAR
+
+
+BEGIN
+	// ==============================================================================
+	// BLOCO: FB10 - GESTÃO DE SIRENE INDUSTRIAL (ARQUITETURA SÍNCRONA)
+	// PADRÃO: 5 ESTADOS OPERACIONAIS + 7 DIAGNÓSTICOS NO STSTEP (FAIL-SAFE)
+	// ==============================================================================
+	
+	REGION Init
+	    // 1. SNAPSHOTS DE ENTRADA
+	    #tmpNecessitaSirene :=
+	    "CONTROLE_STATUS_DB".StStartingGlobal.BRITADORES.BRT02 OR
+	    "CONTROLE_STATUS_DB".StStartingGlobal.BRITADORES.BRT03 OR
+	    "CONTROLE_STATUS_DB".StStartingGlobal.BRITADORES.BRT04 OR
+	    "CONTROLE_STATUS_DB".StStartingGlobal.CALHAS.CVR01 OR
+	    "CONTROLE_STATUS_DB".StStartingGlobal.CALHAS.CVR02 OR
+	    "CONTROLE_STATUS_DB".StStartingGlobal.CALHAS.CVR03 OR
+	    "CONTROLE_STATUS_DB".StStartingGlobal.PENEIRAS.PNR02 OR
+	    "CONTROLE_STATUS_DB".StStartingGlobal.PENEIRAS.PNR03 OR
+	    "CONTROLE_STATUS_DB".StStartingGlobal.PENEIRAS.PNR04 OR
+	    "CONTROLE_STATUS_DB".StStartingGlobal.TRANSPORTADORES.TRP06 OR
+	    "CONTROLE_STATUS_DB".StStartingGlobal.TRANSPORTADORES.TRP07 OR
+	    "CONTROLE_STATUS_DB".StStartingGlobal.TRANSPORTADORES.TRP08 OR
+	    "CONTROLE_STATUS_DB".StStartingGlobal.TRANSPORTADORES.TRP09 OR
+	    "CONTROLE_STATUS_DB".StStartingGlobal.TRANSPORTADORES.TRP10 OR
+	    "CONTROLE_STATUS_DB".StStartingGlobal.TRANSPORTADORES.TRP11 OR
+	    "CONTROLE_STATUS_DB".StStartingGlobal.TRANSPORTADORES.TRP12 OR
+	    "CONTROLE_STATUS_DB".StStartingGlobal.TRANSPORTADORES.TRP13 OR
+	    "CONTROLE_STATUS_DB".StStartingGlobal.TRANSPORTADORES.TRP14 OR
+	    "CONTROLE_STATUS_DB".StStartingGlobal.TRANSPORTADORES.TRP15 OR
+	    "CONTROLE_STATUS_DB".StStartingGlobal.TRANSPORTADORES.TRP16 OR
+	    "CONTROLE_STATUS_DB".StStartingGlobal.TRANSPORTADORES.TRP17 OR
+	    "CONTROLE_STATUS_DB".StStartingGlobal.TRANSPORTADORES.TRP18 OR
+	    "CONTROLE_STATUS_DB".StStartingGlobal.TRANSPORTADORES.TRP19;
+	    
+	    #tmpPlantaEmMovimento :=
+	    "CONTROLE_STATUS_DB".StOnGlobal.BRITADORES.BRT02 OR
+	    "CONTROLE_STATUS_DB".StOnGlobal.BRITADORES.BRT03 OR
+	    "CONTROLE_STATUS_DB".StOnGlobal.BRITADORES.BRT04 OR
+	    "CONTROLE_STATUS_DB".StOnGlobal.CALHAS.CVR01 OR
+	    "CONTROLE_STATUS_DB".StOnGlobal.CALHAS.CVR02 OR
+	    "CONTROLE_STATUS_DB".StOnGlobal.CALHAS.CVR03 OR
+	    "CONTROLE_STATUS_DB".StOnGlobal.PENEIRAS.PNR02 OR
+	    "CONTROLE_STATUS_DB".StOnGlobal.PENEIRAS.PNR03 OR
+	    "CONTROLE_STATUS_DB".StOnGlobal.PENEIRAS.PNR04 OR
+	    "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP06 OR
+	    "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP07 OR
+	    "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP08 OR
+	    "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP09 OR
+	    "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP10 OR
+	    "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP11 OR
+	    "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP12 OR
+	    "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP13 OR
+	    "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP14 OR
+	    "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP15 OR
+	    "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP16 OR
+	    "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP17 OR
+	    "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP18 OR
+	    "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP19;
+	    
+	    #tmpFalha := "CONTROLE_STATUS_DB".StFaultGlobal.GLOBAL;
+	    #tmpCmdTeste := #CmdTesteManual;
+	    #tmpHabilita := #EnHabilita;
+	    #tmpEnableManual := "SELEÇÃO MANUAL";
+	    
+	    #tmpStartDetectado := #tmpNecessitaSirene AND NOT (#EL.StFeedback OR #EL.StOn);
+	    
+	    // 2. LIMPEZA DE TRANSIÇÕES (Ciclo Atual)
+	    #TransitionTo.StOff := 0;
+	    #TransitionTo.StManual := 0;
+	    #TransitionTo.StStarting := 0;
+	    #TransitionTo.StFeedback := 0;
+	    #TransitionTo.StOn := 0;
+	END_REGION
+	
+	REPEAT
+	    REGION State_Safety_Net
+	        // COLD START: Força o repouso se o FSM se perder
+	        IF NOT #EL.StOff AND NOT #EL.StManual AND NOT #EL.StStarting AND
+	            NOT #EL.StFeedback AND NOT #EL.StOn AND
+	            NOT #TransitionTo.StOff AND NOT #TransitionTo.StManual AND
+	            NOT #TransitionTo.StStarting AND NOT #TransitionTo.StOn
+	        THEN
+	            #EL.StOff := 1;
+	            #EL.StStep := 0;
+	        END_IF;
+	    END_REGION
+	    
+	    REGION StOff
+	        // --- TRANSIÇÃO DE ENTRADA ---
+	        IF #TransitionTo.StOff THEN
+	            #TransitionTo.StOff := 0;
+	            #EL.StOff := 1;
+	            #EL.StManual := 0;
+	            #EL.StStarting := 0;
+	            #EL.StFeedback := 0;
+	            #EL.StOn := 0;
+	            #statStSireneOk := 0;
+	            #statCmdSireneFisica := 0;
+	            // Nota: O StStep NÃO é zerado aqui para reter o ID de Falha/Aviso (5 a 11)
+	            
+	            // --- CICLO DO ESTADO ---
+	        ELSIF #EL.StOff THEN
+	            // PRIORIDADE 1: FALHA/BLOQUEIO
+	            IF #tmpStartDetectado AND NOT #tmpHabilita THEN
+	                #EL.StStep := 7; // Aviso: Partida bloqueada por permissivo
+	                
+	                // PRIORIDADE 2: MANUAL
+	            ELSIF #tmpCmdTeste AND #tmpEnableManual AND NOT #tmpPlantaEmMovimento THEN
+	                #EL.StOff := 0;
+	                #TransitionTo.StManual := 1;
+	                
+	                // PRIORIDADE 3: SUCESSO (AUTO NORMAL)
+	            ELSIF #tmpStartDetectado AND NOT #tmpFalha AND #tmpHabilita THEN
+	                #EL.StOff := 0;
+	                #TransitionTo.StStarting := 1;
+	                (*
+	                // LIMPEZA NATURAL DE AVISOS E FALHAS
+	            ELSE
+	                IF (#EL.StStep >= 8 AND #EL.StStep <= 11) AND NOT #tmpFalha THEN
+	                    #EL.StStep := 0;
+	                END_IF;*)
+	            END_IF;
+	        END_IF;
+	    END_REGION
+	    
+	    REGION StManual
+	        IF #TransitionTo.StManual THEN
+	            #TransitionTo.StManual := 0;
+	            #EL.StManual := 1;
+	            #EL.StOff := 0;
+	            #statCmdSireneFisica := 1;
+	            #EL.StStep := 1;
+	            
+	        ELSIF #EL.StManual THEN
+	            // PRIORIDADE 1: FALHA
+	            IF #tmpFalha THEN
+	                #EL.StStep := 8;
+	                #EL.StManual := 0;
+	                #TransitionTo.StOff := 1;
+	                // PRIORIDADE 2: ABORTO (SOLTOU BOTÃO)
+	            ELSIF NOT #tmpCmdTeste THEN
+	                #EL.StStep := 5;
+	                #EL.StManual := 0;
+	                #TransitionTo.StOff := 1;
+	                // PRIORIDADE 3: SUCESSO/AVANÇO (AUTOMAÇÃO ASSUME)
+	            ELSIF #tmpStartDetectado THEN
+	                #EL.StManual := 0;
+	                #TransitionTo.StStarting := 1;
+	            END_IF;
+	        END_IF;
+	    END_REGION
+	    
+	    REGION StStarting
+	        IF #TransitionTo.StStarting THEN
+	            #TransitionTo.StStarting := 0;
+	            #EL.StStarting := 1;
+	            #EL.StOff := 0;
+	            #statCmdSireneFisica := 1;
+	            #EL.StStep := 2;
+	            
+	        ELSIF #EL.StStarting THEN
+	            // PRIORIDADE 1: FALHA GERAL
+	            IF #tmpFalha THEN
+	                #EL.StStep := 9;
+	                #EL.StStarting := 0;
+	                #TransitionTo.StOff := 1;
+	                // PRIORIDADE 2: PERDA DE PERMISSIVO
+	            ELSIF NOT #tmpHabilita THEN
+	                #EL.StStep := 6;
+	                #EL.StStarting := 0;
+	                #TransitionTo.StOff := 1;
+	                // PRIORIDADE 3: QUEDA DE DEMANDA
+	            ELSIF NOT #tmpNecessitaSirene THEN
+	                #EL.StStep := 5;
+	                #EL.StStarting := 0;
+	                #TransitionTo.StOff := 1;
+	                // PRIORIDADE 4: SUCESSO (TEMPO DE TOQUE FIM)
+	            ELSIF #instTimerToque.Q THEN
+	                #EL.StStarting := 0;
+	                #TransitionTo.StFeedback := 1;
+	            END_IF;
+	        END_IF;
+	    END_REGION
+	    
+	    REGION StFeedback
+	        IF #TransitionTo.StFeedback THEN
+	            #TransitionTo.StFeedback := 0;
+	            #EL.StFeedback := 1;
+	            #EL.StStarting := 0;
+	            #statCmdSireneFisica := 0;
+	            #EL.StStep := 3;
+	            
+	        ELSIF #EL.StFeedback THEN
+	            // PRIORIDADE 1: FALHA GERAL
+	            IF #tmpFalha THEN
+	                #EL.StStep := 8;
+	                #EL.StFeedback := 0;
+	                #TransitionTo.StOff := 1;
+	                // PRIORIDADE 2: FALHA TIMEOUT (MOTOR NÃO PARTIU)
+	            ELSIF #instTimerFeedback.Q THEN
+	                #EL.StStep := 10;
+	                #EL.StFeedback := 0;
+	                #TransitionTo.StOff := 1;
+	                (*
+	                // PRIORIDADE 3: QUEDA DE DEMANDA
+	            ELSIF NOT #tmpNecessitaSirene THEN
+	                #EL.StStep := 5;
+	                #EL.StFeedback := 0;
+	                #TransitionTo.StOff := 1;
+	                *)
+	                // PRIORIDADE 4: SUCESSO (PLANTA RODANDO)
+	            ELSIF #tmpPlantaEmMovimento THEN
+	                #EL.StFeedback := 0;
+	                #TransitionTo.StOn := 1;
+	            END_IF;
+	        END_IF;
+	    END_REGION
+	    
+	    REGION StOn
+	        IF #TransitionTo.StOn THEN
+	            #TransitionTo.StOn := 0;
+	            #EL.StOn := 1;
+	            #EL.StFeedback := 0;
+	            #EL.StOff := 0;
+	            #statStSireneOk := 1;
+	            #EL.StStep := 4;
+	            
+	        ELSIF #EL.StOn THEN
+	            // PRIORIDADE 1: FALHA GERAL OU PERDA DE FEEDBACK BRUSCO
+	            IF #tmpFalha OR (NOT #tmpPlantaEmMovimento AND #tmpNecessitaSirene) THEN
+	                #EL.StStep := 11;
+	                #EL.StOn := 0;
+	                #TransitionTo.StOff := 1;
+	                // PRIORIDADE 2: PERDA DE PERMISSIVO
+	            ELSIF NOT #tmpHabilita THEN
+	                #EL.StStep := 6;
+	                #EL.StOn := 0;
+	                #TransitionTo.StOff := 1;
+	                // PRIORIDADE 3: PARADA COMANDO (INÉRCIA ZERO)
+	            ELSIF NOT #tmpPlantaEmMovimento AND NOT #tmpNecessitaSirene THEN
+	                #EL.StStep := 5;
+	                #EL.StOn := 0;
+	                #TransitionTo.StOff := 1;
+	                // PRIORIDADE 4: SUCESSO (FIM NATURAL DA VALIDADE 30MIN)
+	            ELSIF #instTimerValidade.Q THEN
+	                #EL.StStep := 0;
+	                #EL.StOn := 0;
+	                #TransitionTo.StOff := 1;
+	            END_IF;
+	        END_IF;
+	    END_REGION
+	    
+	UNTIL NOT #TransitionTo.StOff AND NOT #TransitionTo.StManual AND
+	    NOT #TransitionTo.StStarting AND NOT #TransitionTo.StFeedback AND NOT #TransitionTo.StOn
+	END_REPEAT;
+	
+	REGION Global_End
+	    // ATUALIZAÇÃO DOS TIMERS IEC
+	    #instTimerToque(IN := #EL.StStarting,
+	                    PT := #ParTempoToque);
+	    #instTimerFeedback(IN := #EL.StFeedback,
+	                       PT := #ParTempoMaxPartida);
+	    #instTimerValidade(IN := #EL.StOn,
+	                       PT := #ParTempoValidade);
+	    
+	    // ESCRITA NAS SAÍDAS E INTERFACES GLOBAIS
+	    #CmdSireneFisica := #statCmdSireneFisica AND NOT #tmpFalha AND #tmpHabilita;
+	    
+	    // O permissivo direto pro pino de saída: só é TRUE se a validade (StOn) estiver ativa, sem falhas e com habilitação.
+	    #StSireneOk := (#EL.StFeedback OR #EL.StOn) AND NOT #tmpFalha AND #tmpHabilita;
+	    
+	    //"CONTROLE_STATUS_DB".StSireneOk := #StSireneOk;
+	    
+	    
+	    // Contagem Regressiva para IHM (Tempo Restante do Toque)
+	    #EL.TimerToque := SEL(G := #EL.StStarting, IN0 := T#0ms, IN1 := #ParTempoToque - #instTimerToque.ET);
+	    
+	    // Contagem Regressiva para IHM (Tempo Restante da Validade)
+	    #EL.TimerValidade := SEL(G := #EL.StOn, IN0 := T#0ms, IN1 := #ParTempoValidade - #instTimerValidade.ET);
+	    
+	    "IHM_DB".Status.Sirene.StStep := #EL.StStep;
+	    "IHM_DB".Status.Sirene.StTempoRestante := #EL.TimerToque;
+	    "IHM_DB".Status.Sirene.StValidadeRestante := #EL.TimerValidade;
+	    
+	END_REGION
+	
+	REGION Tabela de referência de Status
+	    (*
+	     ==========================================================================
+	     TABELA DE STATUS REFERÊNCIA (SIRENE INTELIGENTE - 5 ESTADOS)
+	     ==========================================================================       
+	       |ID    |Categoria   |Descrição 
+	     ==|======|============|===================================================
+	       |0     |Operação    |Desligado em repouso
+	       |1     |Operação    |StManual: Teste manual via IHM ativo
+	       |2     |Operação    |StStarting: Iniciando sequência (Toque Físico)
+	       |3     |Operação    |StFeedback: Sirene OK, aguardando feedback do motor
+	       |4     |Operação    |StOn: Em operação normal (Janela de 30min válida)
+	       |5     |Aviso       |Desligado por comando / Fim de teste
+	       |6     |Aviso       |Desligado por perder o permissivo
+	       |7     |Aviso       |Partida bloqueada: Falta permissivo
+	       |8     |Falha       |Falha de Segurança/Hardware (Falha Geral)
+	       |9     |Falha       |Falha de Partida: Aborto crítico durante o aviso
+	       |10    |Falha       |Falha de Partida: Timeout do Motor (Watchdog)
+	       |11    |Falha       |Falha em Operação: Perda de Feedback mecânico
+	     ==========================================================================
+	    *)
+	END_REGION
+END_FUNCTION_BLOCK
+

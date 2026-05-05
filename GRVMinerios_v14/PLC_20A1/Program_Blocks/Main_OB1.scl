@@ -1,0 +1,75 @@
+ORGANIZATION_BLOCK "Main"
+TITLE = "Main Program Sweep (Cycle)"
+VERSION : 0.1
+
+VAR_TEMP
+    emerg_press : Bool;
+END_VAR
+
+BEGIN
+
+// ============================================================
+// Network 1: SISTEMA
+// ============================================================
+// Executa bloco de sistema (tempo de ciclo, pulsos de clock)
+RUNTIME("ScanPLC" := P#M2.0,
+        "Internal" := P#M10.0);
+
+"Sys_DB"."Sys"(EN := TRUE,
+               OutPulse1s => FALSE);
+
+// ============================================================
+// Network 2: SEGURANÇA E SINALIZAÇÃO
+// ============================================================
+"Sys_Safety"();
+
+// ============================================================
+// Network 3: PEGA PARAMETROS DA IHM
+// ============================================================
+IF "Sys_DB".OutPulse1s THEN
+    "SincParam"(InpDesabilitaSinc := "IHM_DB".Comandos.CmdDesabilitaSincParam);
+END_IF;
+
+// ============================================================
+// Network 4: ERROS
+// ============================================================
+"Erros"();
+
+// ============================================================
+// Network 5: SIRENE
+// ============================================================
+"SIRENE_DB"."SIRENE"(
+    EnHabilita          := TRUE,
+    CmdTesteManual      := "IHM_DB".Comandos.CmdTesteSirene,
+    ParTempoToque       := "IHM_DB".Parametros.Sirene.ParTempoToque,
+    ParTempoMaxPartida  := "IHM_DB".Parametros.Sirene.ParTempoMaxPartida,
+    ParTempoValidade    := "IHM_DB".Parametros.Sirene.ParTempoValidade,
+    StSireneOk          => "CONTROLE_STATUS_DB".StSireneOk,
+    CmdSirene_Fisica    => "SIRENE 220VCA");
+
+// ============================================================
+// Network 6: DETECTORES
+// ============================================================
+"Detectores"(CmdReset := "RESET MESA DE CONTROLE");
+
+// ============================================================
+// Network 7: TRANSPORTADORES
+// ============================================================
+"TRANSPORTADORES_DB"."TRANSPORTADORES"();
+
+// ============================================================
+// Network 8: CALHA VIBRATÓRIA
+// ============================================================
+"CALHA VIBRATÓRIA_DB"."CALHA VIBRATÓRIA"();
+
+// ============================================================
+// Network 9: PENEIRAS
+// ============================================================
+"PENEIRAS_DB"."PENEIRAS"();
+
+// ============================================================
+// Network 10: BRITADOR
+// ============================================================
+"BRITADORES_DB"."BRITADORES"();
+
+END_ORGANIZATION_BLOCK

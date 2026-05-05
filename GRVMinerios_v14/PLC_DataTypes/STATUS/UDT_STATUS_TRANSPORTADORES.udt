@@ -1,0 +1,21 @@
+TYPE "UDT_STATUS_TRANSPORTADORES"
+VERSION : 0.1
+   STRUCT
+      TRP06 : Bool;
+      TRP07 : Bool;
+      TRP08 : Bool;
+      TRP09 : Bool;
+      TRP10 : Bool;
+      TRP11 : Bool;
+      TRP12 : Bool;
+      TRP13 : Bool;
+      TRP14 : Bool;
+      TRP15 : Bool;
+      TRP16 : Bool;
+      TRP17 : Bool;
+      TRP18 : Bool;
+      TRP19 : Bool;
+   END_STRUCT;
+
+END_TYPE
+

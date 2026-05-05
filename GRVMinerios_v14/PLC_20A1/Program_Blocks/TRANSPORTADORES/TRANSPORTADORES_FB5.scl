@@ -1,0 +1,519 @@
+FUNCTION_BLOCK "TRANSPORTADORES"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR 
+      TRP06 { S7_SetPoint := 'False'} : "EL_4St_Fct";
+      TRP07 { S7_SetPoint := 'False'} : "EL_4St_Fct";
+      TRP08 { S7_SetPoint := 'False'} : "EL_4St_Fct";
+      TRP09 { S7_SetPoint := 'False'} : "EL_4St_Fct";
+      TRP10 { S7_SetPoint := 'False'} : "EL_4St_Fct";
+      TRP11 { S7_SetPoint := 'False'} : "EL_4St_Fct";
+      TRP12 { S7_SetPoint := 'False'} : "EL_4St_Fct";
+      TRP13 { S7_SetPoint := 'False'} : "EL_4St_Fct";
+      TRP14 { S7_SetPoint := 'False'} : "EL_4St_Fct";
+      TRP15 { S7_SetPoint := 'False'} : "EL_4St_Fct";
+      TRP16 { S7_SetPoint := 'False'} : "EL_4St_Fct";
+      TRP17 { S7_SetPoint := 'False'} : "EL_4St_Fct";
+      TRP18 { S7_SetPoint := 'False'} : "EL_4St_Fct";
+      TRP19 { S7_SetPoint := 'False'} : "EL_4St_Fct";
+   END_VAR
+
+   VAR_TEMP 
+      permissivos_trp06 : Bool;
+      permissivos_trp07 : Bool;
+      permissivos_trp08 : Bool;
+      permissivos_trp09 : Bool;
+      permissivos_trp10 : Bool;
+      permissivos_trp11 : Bool;
+      permissivos_trp12 : Bool;
+      permissivos_trp13 : Bool;
+      permissivos_trp14 : Bool;
+      permissivos_trp15 : Bool;
+      permissivos_trp16 : Bool;
+      permissivos_trp17 : Bool;
+      permissivos_trp18 : Bool;
+      permissivos_trp19 : Bool;
+      tmpSelManual : Bool;
+   END_VAR
+
+
+BEGIN
+	// ==============================================================================
+	// BLOCO: FB5 - GESTÃO DE TRANSPORTADORES DE CORREIA (TRP06 a TRP19)
+	// ARQUITETURA: Encapsulamento em Regions (Map_In -> Process -> Core -> Map_Out)
+	// ==============================================================================
+	
+	REGION "CONFIGURAÇÃO GERAL DE OPERAÇÃO"
+	    // Sincronização do modo de operação manual/automático
+	    #tmpSelManual := "SELEÇÃO MANUAL";
+	    
+	    #TRP06.EL.EnManual := #tmpSelManual;
+	    #TRP07.EL.EnManual := #tmpSelManual;
+	    #TRP08.EL.EnManual := #tmpSelManual;
+	    #TRP09.EL.EnManual := #tmpSelManual;
+	    #TRP10.EL.EnManual := #tmpSelManual;
+	    #TRP11.EL.EnManual := #tmpSelManual;
+	    #TRP12.EL.EnManual := #tmpSelManual;
+	    #TRP13.EL.EnManual := #tmpSelManual;
+	    #TRP14.EL.EnManual := #tmpSelManual;
+	    #TRP15.EL.EnManual := #tmpSelManual;
+	    #TRP16.EL.EnManual := #tmpSelManual;
+	    #TRP17.EL.EnManual := #tmpSelManual;
+	    #TRP18.EL.EnManual := #tmpSelManual;
+	    #TRP19.EL.EnManual := #tmpSelManual;
+	END_REGION
+	
+	// ==============================================================================
+	// LINHA A: CIRCUITO BRITADOR CÔNICO 02
+	// ==============================================================================
+	
+	REGION "TRP 06 - ALIMENTAÇÃO BRT02"
+	    REGION "1. MAP_IN"
+	        #TRP06.EL.StBotao := "LIGA TRANSPORTADOR DE CORREIA 06";
+	        #TRP06.EL.CmdFalhaReset := "RESET MESA DE CONTROLE";
+	        #TRP06.EL.EnFLigado := "TRANSPORTADOR DE CORREIA 06 LIGADO";
+	        #TRP06.EL.EnFDispFalha := "TÉRMICO TRANSPORTADOR DE CORREIA 06";
+	    END_REGION
+	    REGION "2. PROCESS"
+	        #permissivos_trp06 := "GERAL_EMERGENCIA_OK" AND NOT "CONTROLE_STATUS_DB".StFaultGlobal.BRITADORES.BRT02 AND NOT "CONTROLE_STATUS_DB".StFalhaDetectores.DTC01;
+	        #TRP06.EL.EnHabilita := ("SELEÇÃO MANUAL" AND #permissivos_trp06) OR ("SELEÇÃO AUTOMÁTICO" AND #permissivos_trp06 AND "CONTROLE_STATUS_DB".StOnGlobal.BRITADORES.BRT02);
+	        IF #TRP06.EL.StBotao AND NOT #TRP06.EL.StAnteriorBotao THEN
+	            IF #TRP06.EL.StOff THEN
+	                #TRP06.EL.CmdOn := true;
+	            ELSE
+	                #TRP06.EL.CmdOff := true;
+	            END_IF;
+	        END_IF;
+	        #TRP06.EL.StAnteriorBotao := #TRP06.EL.StBotao;
+	    END_REGION
+	    REGION "3. CORE"
+	        #TRP06();
+	    END_REGION
+	    REGION "4. MAP_OUT"
+	        "ACIONA TRANSPORTADOR DE CORREIA 06" := #TRP06.EL.SdaF;
+	    END_REGION
+	END_REGION
+	
+	REGION "TRP 07 - SAÍDA BRT02 PARA PNR02"
+	    REGION "1. MAP_IN"
+	        #TRP07.EL.StBotao := "LIGA TRANSPORTADOR DE CORREIA 07";
+	        #TRP07.EL.CmdFalhaReset := "RESET MESA DE CONTROLE";
+	        #TRP07.EL.EnFLigado := "TRANSPORTADOR DE CORREIA 07 LIGADO";
+	        #TRP07.EL.EnFDispFalha := "TÉRMICO TRANSPORTADOR DE CORREIA 07";
+	    END_REGION
+	    REGION "2. PROCESS"
+	        #permissivos_trp07 := "GERAL_EMERGENCIA_OK" AND NOT "CONTROLE_STATUS_DB".StFaultGlobal.BRITADORES.BRT02 AND NOT "CONTROLE_STATUS_DB".StFaultGlobal.PENEIRAS.PNR02;
+	        #TRP07.EL.EnHabilita := ("SELEÇÃO MANUAL" AND #permissivos_trp07) OR ("SELEÇÃO AUTOMÁTICO" AND #permissivos_trp07 AND "CONTROLE_STATUS_DB".StOnGlobal.PENEIRAS.PNR02);
+	        IF #TRP07.EL.StBotao AND NOT #TRP07.EL.StAnteriorBotao THEN
+	            IF #TRP07.EL.StOff THEN
+	                #TRP07.EL.CmdOn := true;
+	            ELSE
+	                #TRP07.EL.CmdOff := true;
+	            END_IF;
+	        END_IF;
+	        #TRP07.EL.StAnteriorBotao := #TRP07.EL.StBotao;
+	    END_REGION
+	    REGION "3. CORE"
+	        #TRP07();
+	    END_REGION
+	    REGION "4. MAP_OUT"
+	        "ACIONA TRANSPORTADOR DE CORREIA 07" := #TRP07.EL.SdaF;
+	    END_REGION
+	END_REGION
+	
+	REGION "TRP 08 - RETORNO BRT02"
+	    REGION "1. MAP_IN"
+	        #TRP08.EL.StBotao := "LIGA TRANSPORTADOR DE CORREIA 08";
+	        #TRP08.EL.CmdFalhaReset := "RESET MESA DE CONTROLE";
+	        #TRP08.EL.EnFLigado := "TRANSPORTADOR DE CORREIA 08 LIGADO";
+	        #TRP08.EL.EnFDispFalha := "TÉRMICO TRANSPORTADOR DE CORREIA 08";
+	    END_REGION
+	    REGION "2. PROCESS"
+	        #permissivos_trp08 := "GERAL_EMERGENCIA_OK" AND NOT "CONTROLE_STATUS_DB".StFaultGlobal.BRITADORES.BRT02;
+	        #TRP08.EL.EnHabilita := ("SELEÇÃO MANUAL" AND #permissivos_trp08) OR ("SELEÇÃO AUTOMÁTICO" AND #permissivos_trp08 AND "CONTROLE_STATUS_DB".StOnGlobal.PENEIRAS.PNR02);
+	        IF #TRP08.EL.StBotao AND NOT #TRP08.EL.StAnteriorBotao THEN
+	            IF #TRP08.EL.StOff THEN
+	                #TRP08.EL.CmdOn := true;
+	            ELSE
+	                #TRP08.EL.CmdOff := true;
+	            END_IF;
+	        END_IF;
+	        #TRP08.EL.StAnteriorBotao := #TRP08.EL.StBotao;
+	    END_REGION
+	    REGION "3. CORE"
+	        #TRP08();
+	    END_REGION
+	    REGION "4. MAP_OUT"
+	        "ACIONA TRANSPORTADOR DE CORREIA 08" := #TRP08.EL.SdaF;
+	    END_REGION
+	END_REGION
+	
+	REGION "TRP 09 - PASSANTE BRT02"
+	    REGION "1. MAP_IN"
+	        #TRP09.EL.StBotao := "LIGA TRANSPORTADOR DE CORREIA 09";
+	        #TRP09.EL.CmdFalhaReset := "RESET MESA DE CONTROLE";
+	        #TRP09.EL.EnFLigado := "TRANSPORTADOR DE CORREIA 09 LIGADO";
+	        #TRP09.EL.EnFDispFalha := "TÉRMICO TRANSPORTADOR DE CORREIA 09";
+	    END_REGION
+	    REGION "2. PROCESS"
+	        #permissivos_trp09 := "GERAL_EMERGENCIA_OK";
+	        #TRP09.EL.EnHabilita := ("SELEÇÃO MANUAL" AND #permissivos_trp09) OR ("SELEÇÃO AUTOMÁTICO" AND #permissivos_trp09 AND "CONTROLE_STATUS_DB".StOnGlobal.BRITADORES.BRT02);
+	        IF #TRP09.EL.StBotao AND NOT #TRP09.EL.StAnteriorBotao THEN
+	            IF #TRP09.EL.StOff THEN
+	                #TRP09.EL.CmdOn := true;
+	            ELSE
+	                #TRP09.EL.CmdOff := true;
+	            END_IF;
+	        END_IF;
+	        #TRP09.EL.StAnteriorBotao := #TRP09.EL.StBotao;
+	    END_REGION
+	    REGION "3. CORE"
+	        #TRP09();
+	    END_REGION
+	    REGION "4. MAP_OUT"
+	        "ACIONA TRANSPORTADOR DE CORREIA 09" := #TRP09.EL.SdaF;
+	    END_REGION
+	END_REGION
+	
+	// ==============================================================================
+	// LINHA B: CIRCUITO BRITADOR CÔNICO 03
+	// ==============================================================================
+	
+	REGION "TRP 10 - SAÍDA BRT03"
+	    REGION "1. MAP_IN"
+	        #TRP10.EL.StBotao := "LIGA TRANSPORTADOR DE CORREIA 10";
+	        #TRP10.EL.CmdFalhaReset := "RESET MESA DE CONTROLE";
+	        #TRP10.EL.EnFLigado := "TRANSPORTADOR DE CORREIA 10 LIGADO";
+	        #TRP10.EL.EnFDispFalha := "TÉRMICO TRANSPORTADOR DE CORREIA 10";
+	    END_REGION
+	    REGION "2. PROCESS"
+	        #permissivos_trp10 := "GERAL_EMERGENCIA_OK";
+	        #TRP10.EL.EnHabilita := ("SELEÇÃO MANUAL" AND #permissivos_trp10) OR ("SELEÇÃO AUTOMÁTICO" AND #permissivos_trp10 AND "CONTROLE_STATUS_DB".StOnGlobal.PENEIRAS.PNR03);
+	        IF #TRP10.EL.StBotao AND NOT #TRP10.EL.StAnteriorBotao THEN
+	            IF #TRP10.EL.StOff THEN
+	                #TRP10.EL.CmdOn := true;
+	            ELSE
+	                #TRP10.EL.CmdOff := true;
+	            END_IF;
+	        END_IF;
+	        #TRP10.EL.StAnteriorBotao := #TRP10.EL.StBotao;
+	    END_REGION
+	    REGION "3. CORE"
+	        #TRP10();
+	    END_REGION
+	    REGION "4. MAP_OUT"
+	        "ACIONA TRANSPORTADOR DE CORREIA 10" := #TRP10.EL.SdaF;
+	    END_REGION
+	END_REGION
+	
+	REGION "TRP 11 - AUXILIAR BRT03"
+	    REGION "1. MAP_IN"
+	        #TRP11.EL.StBotao := "LIGA TRANSPORTADOR DE CORREIA 11";
+	        #TRP11.EL.CmdFalhaReset := "RESET MESA DE CONTROLE";
+	        #TRP11.EL.EnFLigado := "TRANSPORTADOR DE CORREIA 11 LIGADO";
+	        #TRP11.EL.EnFDispFalha := "TÉRMICO TRANSPORTADOR DE CORREIA 11";
+	    END_REGION
+	    REGION "2. PROCESS"
+	        #permissivos_trp11 := "GERAL_EMERGENCIA_OK";
+	        #TRP11.EL.EnHabilita := ("SELEÇÃO MANUAL" AND #permissivos_trp11) OR ("SELEÇÃO AUTOMÁTICO" AND #permissivos_trp11 AND "CONTROLE_STATUS_DB".StOnGlobal.PENEIRAS.PNR03);
+	        IF #TRP11.EL.StBotao AND NOT #TRP11.EL.StAnteriorBotao THEN
+	            IF #TRP11.EL.StOff THEN
+	                #TRP11.EL.CmdOn := true;
+	            ELSE
+	                #TRP11.EL.CmdOff := true;
+	            END_IF;
+	        END_IF;
+	        #TRP11.EL.StAnteriorBotao := #TRP11.EL.StBotao;
+	    END_REGION
+	    REGION "3. CORE"
+	        #TRP11();
+	    END_REGION
+	    REGION "4. MAP_OUT"
+	        "ACIONA TRANSPORTADOR DE CORREIA 11" := #TRP11.EL.SdaF;
+	    END_REGION
+	END_REGION
+	
+	REGION "TRP 12 - ALIMENTAÇÃO BRT03"
+	    REGION "1. MAP_IN"
+	        #TRP12.EL.StBotao := "LIGA TRANSPORTADOR DE CORREIA 12";
+	        #TRP12.EL.CmdFalhaReset := "RESET MESA DE CONTROLE";
+	        #TRP12.EL.EnFLigado := "TRANSPORTADOR DE CORREIA 12 LIGADO";
+	        #TRP12.EL.EnFDispFalha := "TÉRMICO TRANSPORTADOR DE CORREIA 12";
+	    END_REGION
+	    REGION "2. PROCESS"
+	        #permissivos_trp12 := "GERAL_EMERGENCIA_OK" AND NOT "CONTROLE_STATUS_DB".StFaultGlobal.BRITADORES.BRT03 AND NOT "CONTROLE_STATUS_DB".StFalhaDetectores.DTC02;
+	        #TRP12.EL.EnHabilita := ("SELEÇÃO MANUAL" AND #permissivos_trp12) OR ("SELEÇÃO AUTOMÁTICO" AND #permissivos_trp12 AND "CONTROLE_STATUS_DB".StOnGlobal.BRITADORES.BRT03);
+	        IF #TRP12.EL.StBotao AND NOT #TRP12.EL.StAnteriorBotao THEN
+	            IF #TRP12.EL.StOff THEN
+	                #TRP12.EL.CmdOn := true;
+	            ELSE
+	                #TRP12.EL.CmdOff := true;
+	            END_IF;
+	        END_IF;
+	        #TRP12.EL.StAnteriorBotao := #TRP12.EL.StBotao;
+	    END_REGION
+	    REGION "3. CORE"
+	        #TRP12();
+	    END_REGION
+	    REGION "4. MAP_OUT"
+	        "ACIONA TRANSPORTADOR DE CORREIA 12" := #TRP12.EL.SdaF;
+	    END_REGION
+	END_REGION
+	
+	REGION "TRP 13 - SAÍDA PNR03"
+	    REGION "1. MAP_IN"
+	        #TRP13.EL.StBotao := "LIGA TRANSPORTADOR DE CORREIA 13";
+	        #TRP13.EL.CmdFalhaReset := "RESET MESA DE CONTROLE";
+	        #TRP13.EL.EnFLigado := "TRANSPORTADOR DE CORREIA 13 LIGADO";
+	        #TRP13.EL.EnFDispFalha := "TÉRMICO TRANSPORTADOR DE CORREIA 13";
+	    END_REGION
+	    REGION "2. PROCESS"
+	        #permissivos_trp13 := "GERAL_EMERGENCIA_OK";
+	        #TRP13.EL.EnHabilita := ("SELEÇÃO MANUAL" AND #permissivos_trp13) OR ("SELEÇÃO AUTOMÁTICO" AND #permissivos_trp13 AND "CONTROLE_STATUS_DB".StOnGlobal.PENEIRAS.PNR03);
+	        IF #TRP13.EL.StBotao AND NOT #TRP13.EL.StAnteriorBotao THEN
+	            IF #TRP13.EL.StOff THEN
+	                #TRP13.EL.CmdOn := true;
+	            ELSE
+	                #TRP13.EL.CmdOff := true;
+	            END_IF;
+	        END_IF;
+	        #TRP13.EL.StAnteriorBotao := #TRP13.EL.StBotao;
+	    END_REGION
+	    REGION "3. CORE"
+	        #TRP13();
+	    END_REGION
+	    REGION "4. MAP_OUT"
+	        "ACIONA TRANSPORTADOR DE CORREIA 13" := #TRP13.EL.SdaF;
+	    END_REGION
+	END_REGION
+	
+	// ==============================================================================
+	// LINHA C: CIRCUITO BRITADOR VSI 04
+	// ==============================================================================
+	
+	REGION "TRP 14 - SAÍDA BRT04 A"
+	    REGION "1. MAP_IN"
+	        #TRP14.EL.StBotao := "LIGA TRANSPORTADOR DE CORREIA 14";
+	        #TRP14.EL.CmdFalhaReset := "RESET MESA DE CONTROLE";
+	        #TRP14.EL.EnFLigado := "TRANSPORTADOR DE CORREIA 14 LIGADO";
+	        #TRP14.EL.EnFDispFalha := "TÉRMICO TRANSPORTADOR DE CORREIA 14";
+	    END_REGION
+	    REGION "2. PROCESS"
+	        #permissivos_trp14 := "GERAL_EMERGENCIA_OK" AND NOT "CONTROLE_STATUS_DB".StFaultGlobal.PENEIRAS.PNR04;
+	        #TRP14.EL.EnHabilita := ("SELEÇÃO MANUAL" AND #permissivos_trp14) OR ("SELEÇÃO AUTOMÁTICO" AND #permissivos_trp14 AND "CONTROLE_STATUS_DB".StOnGlobal.PENEIRAS.PNR04);
+	        IF #TRP14.EL.StBotao AND NOT #TRP14.EL.StAnteriorBotao THEN
+	            IF #TRP14.EL.StOff THEN
+	                #TRP14.EL.CmdOn := true;
+	            ELSE
+	                #TRP14.EL.CmdOff := true;
+	            END_IF;
+	        END_IF;
+	        #TRP14.EL.StAnteriorBotao := #TRP14.EL.StBotao;
+	    END_REGION
+	    REGION "3. CORE"
+	        #TRP14();
+	    END_REGION
+	    REGION "4. MAP_OUT"
+	        "ACIONA TRANSPORTADOR DE CORREIA 14" := #TRP14.EL.SdaF;
+	    END_REGION
+	END_REGION
+	
+	REGION "TRP 15 - SAÍDA BRT04 B"
+	    REGION "1. MAP_IN"
+	        #TRP15.EL.StBotao := "LIGA TRANSPORTADOR DE CORREIA 15";
+	        #TRP15.EL.CmdFalhaReset := "RESET MESA DE CONTROLE";
+	        #TRP15.EL.EnFLigado := "TRANSPORTADOR DE CORREIA 15 LIGADO";
+	        #TRP15.EL.EnFDispFalha := "TÉRMICO TRANSPORTADOR DE CORREIA 15";
+	    END_REGION
+	    REGION "2. PROCESS"
+	        #permissivos_trp15 := "GERAL_EMERGENCIA_OK" AND NOT "CONTROLE_STATUS_DB".StFaultGlobal.PENEIRAS.PNR04;
+	        #TRP15.EL.EnHabilita := ("SELEÇÃO MANUAL" AND #permissivos_trp15) OR ("SELEÇÃO AUTOMÁTICO" AND #permissivos_trp15 AND "CONTROLE_STATUS_DB".StOnGlobal.PENEIRAS.PNR04);
+	        IF #TRP15.EL.StBotao AND NOT #TRP15.EL.StAnteriorBotao THEN
+	            IF #TRP15.EL.StOff THEN
+	                #TRP15.EL.CmdOn := true;
+	            ELSE
+	                #TRP15.EL.CmdOff := true;
+	            END_IF;
+	        END_IF;
+	        #TRP15.EL.StAnteriorBotao := #TRP15.EL.StBotao;
+	    END_REGION
+	    REGION "3. CORE"
+	        #TRP15();
+	    END_REGION
+	    REGION "4. MAP_OUT"
+	        "ACIONA TRANSPORTADOR DE CORREIA 15" := #TRP15.EL.SdaF;
+	    END_REGION
+	END_REGION
+	
+	REGION "TRP 16 - ALIMENTAÇÃO BRT04"
+	    REGION "1. MAP_IN"
+	        #TRP16.EL.StBotao := "LIGA TRANSPORTADOR DE CORREIA 16";
+	        #TRP16.EL.CmdFalhaReset := "RESET MESA DE CONTROLE";
+	        #TRP16.EL.EnFLigado := "TRANSPORTADOR DE CORREIA 16 LIGADO";
+	        #TRP16.EL.EnFDispFalha := "TÉRMICO TRANSPORTADOR DE CORREIA 16";
+	    END_REGION
+	    REGION "2. PROCESS"
+	        #permissivos_trp16 := "GERAL_EMERGENCIA_OK" AND NOT "CONTROLE_STATUS_DB".StFaultGlobal.BRITADORES.BRT04 AND NOT "CONTROLE_STATUS_DB".StFalhaDetectores.DTC03;
+	        #TRP16.EL.EnHabilita := ("SELEÇÃO MANUAL" AND #permissivos_trp16) OR ("SELEÇÃO AUTOMÁTICO" AND #permissivos_trp16 AND "CONTROLE_STATUS_DB".StOnGlobal.BRITADORES.BRT04);
+	        IF #TRP16.EL.StBotao AND NOT #TRP16.EL.StAnteriorBotao THEN
+	            IF #TRP16.EL.StOff THEN
+	                #TRP16.EL.CmdOn := true;
+	            ELSE
+	                #TRP16.EL.CmdOff := true;
+	            END_IF;
+	        END_IF;
+	        #TRP16.EL.StAnteriorBotao := #TRP16.EL.StBotao;
+	    END_REGION
+	    REGION "3. CORE"
+	        #TRP16();
+	    END_REGION
+	    REGION "4. MAP_OUT"
+	        "ACIONA TRANSPORTADOR DE CORREIA 16" := #TRP16.EL.SdaF;
+	    END_REGION
+	END_REGION
+	
+	// ==============================================================================
+	// LINHA D: EXPEDIÇÃO FINAL
+	// ==============================================================================
+	
+	REGION "TRP 17 - PRODUTO FINAL A"
+	    REGION "1. MAP_IN"
+	        #TRP17.EL.StBotao := "LIGA TRANSPORTADOR DE CORREIA 17";
+	        #TRP17.EL.CmdFalhaReset := "RESET MESA DE CONTROLE";
+	        #TRP17.EL.EnFLigado := "TRANSPORTADOR DE CORREIA 17 LIGADO";
+	        #TRP17.EL.EnFDispFalha := "TÉRMICO TRANSPORTADOR DE CORREIA 17";
+	    END_REGION
+	    REGION "2. PROCESS"
+	        #permissivos_trp17 := "GERAL_EMERGENCIA_OK" AND NOT "CONTROLE_STATUS_DB".StFaultGlobal.PENEIRAS.PNR04;
+	        #TRP17.EL.EnHabilita := ("SELEÇÃO MANUAL" AND #permissivos_trp17) OR ("SELEÇÃO AUTOMÁTICO" AND #permissivos_trp17 AND "CONTROLE_STATUS_DB".StOnGlobal.PENEIRAS.PNR04);
+	        IF #TRP17.EL.StBotao AND NOT #TRP17.EL.StAnteriorBotao THEN
+	            IF #TRP17.EL.StOff THEN
+	                #TRP17.EL.CmdOn := true;
+	            ELSE
+	                #TRP17.EL.CmdOff := true;
+	            END_IF;
+	        END_IF;
+	        #TRP17.EL.StAnteriorBotao := #TRP17.EL.StBotao;
+	    END_REGION
+	    REGION "3. CORE"
+	        #TRP17();
+	    END_REGION
+	    REGION "4. MAP_OUT"
+	        "ACIONA TRANSPORTADOR DE CORREIA 17" := #TRP17.EL.SdaF;
+	    END_REGION
+	END_REGION
+	
+	REGION "TRP 18 - PRODUTO FINAL B"
+	    REGION "1. MAP_IN"
+	        #TRP18.EL.StBotao := "LIGA TRANSPORTADOR DE CORREIA 18";
+	        #TRP18.EL.CmdFalhaReset := "RESET MESA DE CONTROLE";
+	        #TRP18.EL.EnFLigado := "TRANSPORTADOR DE CORREIA 18 LIGADO";
+	        #TRP18.EL.EnFDispFalha := "TÉRMICO TRANSPORTADOR DE CORREIA 18";
+	    END_REGION
+	    REGION "2. PROCESS"
+	        #permissivos_trp18 := "GERAL_EMERGENCIA_OK" AND NOT "CONTROLE_STATUS_DB".StFaultGlobal.PENEIRAS.PNR04;
+	        #TRP18.EL.EnHabilita := ("SELEÇÃO MANUAL" AND #permissivos_trp18) OR ("SELEÇÃO AUTOMÁTICO" AND #permissivos_trp18 AND "CONTROLE_STATUS_DB".StOnGlobal.PENEIRAS.PNR04);
+	        IF #TRP18.EL.StBotao AND NOT #TRP18.EL.StAnteriorBotao THEN
+	            IF #TRP18.EL.StOff THEN
+	                #TRP18.EL.CmdOn := true;
+	            ELSE
+	                #TRP18.EL.CmdOff := true;
+	            END_IF;
+	        END_IF;
+	        #TRP18.EL.StAnteriorBotao := #TRP18.EL.StBotao;
+	    END_REGION
+	    REGION "3. CORE"
+	        #TRP18();
+	    END_REGION
+	    REGION "4. MAP_OUT"
+	        "ACIONA TRANSPORTADOR DE CORREIA 18" := #TRP18.EL.SdaF;
+	    END_REGION
+	END_REGION
+	
+	REGION "TRP 19 - PRODUTO FINAL C"
+	    REGION "1. MAP_IN"
+	        #TRP19.EL.StBotao := "LIGA TRANSPORTADOR DE CORREIA 19";
+	        #TRP19.EL.CmdFalhaReset := "RESET MESA DE CONTROLE";
+	        #TRP19.EL.EnFLigado := "TRANSPORTADOR DE CORREIA 19 LIGADO";
+	        #TRP19.EL.EnFDispFalha := "TÉRMICO TRANSPORTADOR DE CORREIA 19";
+	    END_REGION
+	    REGION "2. PROCESS"
+	        #permissivos_trp19 := "GERAL_EMERGENCIA_OK" AND NOT "CONTROLE_STATUS_DB".StFaultGlobal.PENEIRAS.PNR04;
+	        #TRP19.EL.EnHabilita := ("SELEÇÃO MANUAL" AND #permissivos_trp19) OR ("SELEÇÃO AUTOMÁTICO" AND #permissivos_trp19 AND "CONTROLE_STATUS_DB".StOnGlobal.PENEIRAS.PNR04);
+	        IF #TRP19.EL.StBotao AND NOT #TRP19.EL.StAnteriorBotao THEN
+	            IF #TRP19.EL.StOff THEN
+	                #TRP19.EL.CmdOn := true;
+	            ELSE
+	                #TRP19.EL.CmdOff := true;
+	            END_IF;
+	        END_IF;
+	        #TRP19.EL.StAnteriorBotao := #TRP19.EL.StBotao;
+	    END_REGION
+	    REGION "3. CORE"
+	        #TRP19();
+	    END_REGION
+	    REGION "4. MAP_OUT"
+	        "ACIONA TRANSPORTADOR DE CORREIA 19" := #TRP19.EL.SdaF;
+	    END_REGION
+	END_REGION
+	
+	// ==============================================================================
+	// MAPEAMENTO GLOBAL DE STATUS PARA A IHM / SCADA
+	// ==============================================================================
+	REGION "ESCREVENDO STATUS GERAL"
+	    "CONTROLE_STATUS_DB".StSomaFalhas.StFalhaTransportadores := #TRP06.EL.StFault OR
+	    #TRP07.EL.StFault OR #TRP08.EL.StFault OR #TRP09.EL.StFault OR #TRP10.EL.StFault OR
+	    #TRP11.EL.StFault OR #TRP12.EL.StFault OR #TRP13.EL.StFault OR #TRP14.EL.StFault OR
+	    #TRP15.EL.StFault OR #TRP16.EL.StFault OR #TRP17.EL.StFault OR #TRP18.EL.StFault OR
+	    #TRP19.EL.StFault;
+	    
+	    // Status Starting
+	    "CONTROLE_STATUS_DB".StStartingGlobal.TRANSPORTADORES.TRP06 := #TRP06.EL.StStarting;
+	    "CONTROLE_STATUS_DB".StStartingGlobal.TRANSPORTADORES.TRP07 := #TRP07.EL.StStarting;
+	    "CONTROLE_STATUS_DB".StStartingGlobal.TRANSPORTADORES.TRP08 := #TRP08.EL.StStarting;
+	    "CONTROLE_STATUS_DB".StStartingGlobal.TRANSPORTADORES.TRP09 := #TRP09.EL.StStarting;
+	    "CONTROLE_STATUS_DB".StStartingGlobal.TRANSPORTADORES.TRP10 := #TRP10.EL.StStarting;
+	    "CONTROLE_STATUS_DB".StStartingGlobal.TRANSPORTADORES.TRP11 := #TRP11.EL.StStarting;
+	    "CONTROLE_STATUS_DB".StStartingGlobal.TRANSPORTADORES.TRP12 := #TRP12.EL.StStarting;
+	    "CONTROLE_STATUS_DB".StStartingGlobal.TRANSPORTADORES.TRP13 := #TRP13.EL.StStarting;
+	    "CONTROLE_STATUS_DB".StStartingGlobal.TRANSPORTADORES.TRP14 := #TRP14.EL.StStarting;
+	    "CONTROLE_STATUS_DB".StStartingGlobal.TRANSPORTADORES.TRP15 := #TRP15.EL.StStarting;
+	    "CONTROLE_STATUS_DB".StStartingGlobal.TRANSPORTADORES.TRP16 := #TRP16.EL.StStarting;
+	    "CONTROLE_STATUS_DB".StStartingGlobal.TRANSPORTADORES.TRP17 := #TRP17.EL.StStarting;
+	    "CONTROLE_STATUS_DB".StStartingGlobal.TRANSPORTADORES.TRP18 := #TRP18.EL.StStarting;
+	    "CONTROLE_STATUS_DB".StStartingGlobal.TRANSPORTADORES.TRP19 := #TRP19.EL.StStarting;
+	    
+	    // Status On/Off
+	    "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP06 := #TRP06.EL.StOn;
+	    "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP07 := #TRP07.EL.StOn;
+	    "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP08 := #TRP08.EL.StOn;
+	    "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP09 := #TRP09.EL.StOn;
+	    "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP10 := #TRP10.EL.StOn;
+	    "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP11 := #TRP11.EL.StOn;
+	    "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP12 := #TRP12.EL.StOn;
+	    "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP13 := #TRP13.EL.StOn;
+	    "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP14 := #TRP14.EL.StOn;
+	    "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP15 := #TRP15.EL.StOn;
+	    "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP16 := #TRP16.EL.StOn;
+	    "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP17 := #TRP17.EL.StOn;
+	    "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP18 := #TRP18.EL.StOn;
+	    "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP19 := #TRP19.EL.StOn;
+	    
+	    // Status Falha
+	    "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP06 := #TRP06.EL.StFault;
+	    "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP07 := #TRP07.EL.StFault;
+	    "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP08 := #TRP08.EL.StFault;
+	    "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP09 := #TRP09.EL.StFault;
+	    "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP10 := #TRP10.EL.StFault;
+	    "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP11 := #TRP11.EL.StFault;
+	    "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP12 := #TRP12.EL.StFault;
+	    "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP13 := #TRP13.EL.StFault;
+	    "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP14 := #TRP14.EL.StFault;
+	    "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP15 := #TRP15.EL.StFault;
+	    "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP16 := #TRP16.EL.StFault;
+	    "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP17 := #TRP17.EL.StFault;
+	    "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP18 := #TRP18.EL.StFault;
+	    "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP19 := #TRP19.EL.StFault;
+	END_REGION
+END_FUNCTION_BLOCK
+

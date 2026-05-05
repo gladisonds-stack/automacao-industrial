@@ -1,0 +1,36 @@
+FUNCTION_BLOCK "Sys"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_OUTPUT 
+      OutPulse1s : Bool;
+   END_VAR
+
+   VAR 
+      accumulatedTime : LReal;
+      OutCycleTime : Time;
+   END_VAR
+
+
+BEGIN
+	// *** Variáveis Estáticas (Static) ***
+	// #accumulatedTime : REAL := 0.0; // Variável para acumular o tempo decorrido (em segundos)
+	// #outRealTimeCounter : DINT := 0; // Contador de tempo real (em segundos)
+	
+	#accumulatedTime += "ScanPLC"; // Adiciona a duração do ciclo atual ao tempo acumulado
+	
+	IF #accumulatedTime >= 1.0 THEN
+	    // Obtém a parte inteira do tempo acumulado (número de segundos completos decorridos)
+	    #OutCycleTime := DINT_TO_TIME(LREAL_TO_DINT(TRUNC(#accumulatedTime) * 1000.0));
+	    //#OutCycleTime := (TRUNC(#accumulatedTime)) * 1000;
+	    
+	    // 3. Bit de pulso de 1s
+	    #OutPulse1s := TRUE;
+	    
+	    // Mantém apenas a parte fracionária para o próximo ciclo
+	    #accumulatedTime := #accumulatedTime - (TRUNC(#accumulatedTime));
+	ELSE
+	    #OutCycleTime := T#0ms;
+	    #OutPulse1s := FALSE;
+	END_IF;
+END_FUNCTION_BLOCK
+

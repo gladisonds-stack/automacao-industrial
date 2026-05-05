@@ -1,0 +1,26 @@
+DATA_BLOCK "CONTROLE_STATUS_DB"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+NON_RETAIN
+   VAR 
+      StSomaFalhas : Struct
+         StFalhaBritadores : Bool;
+         StFalhaPeneiras : Bool;
+         StFalhaCalhas : Bool;
+         StFalhaTransportadores : Bool;
+         StFalhaDetectores : Bool;
+      END_STRUCT;
+      StOnGlobal  : "UDT_STATUS_PLANTA";
+      StStartingGlobal  : "UDT_STATUS_PLANTA";
+      StFaultGlobal  : "UDT_STATUS_PLANTA";
+      StFalhaDetectores  : "UDT_STATUS_DETECTORES";
+      StEmergenciaOk : Bool;
+      tstCount : UInt;
+      StSireneOk : Bool;
+   END_VAR
+
+
+BEGIN
+
+END_DATA_BLOCK
+

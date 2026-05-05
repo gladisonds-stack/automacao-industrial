@@ -1,0 +1,38 @@
+TYPE "EL_7St_UDT"
+VERSION : 0.1
+   STRUCT
+      CmdFalhaReset : Bool;
+      CmdOn : Bool;
+      CmdOff : Bool;
+      EnHabilita : Bool;
+      EnFLigado : Bool;
+      EnFLigado_2 : Bool;
+      EnFDispFalha : Bool;
+      EnFDispFalha_BombaOleo : Bool;
+      StOff : Bool := true;
+      StPreparing : Bool;
+      StWaiting : Bool;
+      StStarting : Bool;
+      StOn : Bool;
+      StIdling : Bool;
+      StFault : Bool;
+      SdaF : Bool;
+      SdaF_2 : Bool;
+      SdaCntFalha : DInt;
+      SdaFalhaReset : Bool;
+      SdaDelayFalha : Time;
+      SdaTime : Time;
+      SdaDelaySda_2 : Time;
+      ParPrepTime : Time := T#5m;
+      ParSdaTime : Time := T#25s;
+      ParPreLubeTime : Time := T#1m;
+      ParSdaDelayFalha : Time := T#2s;
+      ParSdaDelayIdling : Time := T#5m;
+      StLubeOverrunTime : Time;
+      StBotao : Bool;
+      StAnteriorBotao : Bool;
+      StStep : UInt;
+   END_STRUCT;
+
+END_TYPE
+

@@ -1,0 +1,7 @@
+TYPE "UDT_TIME_BRITADORES"
+VERSION : 0.1
+   STRUCT
+      BR02 : Time;
+      BR03 : Time;
+      BR04 : Time;
+   END_STRUCT;

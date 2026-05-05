@@ -1,0 +1,138 @@
+FUNCTION_BLOCK "PENEIRAS"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR 
+      PNR02 : "EL_4St_Fct";
+      PNR03 : "EL_4St_Fct";
+      PNR04 : "EL_4St_Fct";
+   END_VAR
+
+   VAR_TEMP 
+      PERMISSIVOS_PNR02 : Bool;
+      PERMISSIVOS_PNR03 : Bool;
+      PERMISSIVOS_PNR04 : Bool;
+   END_VAR
+
+
+BEGIN
+	// ==============================================================================
+	// BLOCO: FB6 - GESTÃO DE PENEIRAS VIBRATÓRIAS (PNR02, 03 e 04)
+	// ARQUITETURA: Encapsulamento em Regions (Map_In -> Process -> Core -> Map_Out)
+	// ==============================================================================
+	
+	REGION "PNR 02 - PENEIRA BRITADOR 03"
+	    REGION "1. MAP_IN"
+	        #PNR02.EL.StBotao := "LIGA PENEIRA VIBRATÓRIA 02";
+	        #PNR02.EL.CmdFalhaReset := "RESET MESA DE CONTROLE";
+	        #PNR02.EL.EnFLigado := "PENEIRA VIBRATÓRIA 02 LIGADA";
+	        #PNR02.EL.EnFDispFalha := "TÉRMICO PENEIRA VIBRATÓRIA 02";
+	    END_REGION
+	    
+	    REGION "2. PROCESS"
+	        #PERMISSIVOS_PNR02 := "GERAL_EMERGENCIA_OK" AND
+	        NOT "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP09 AND
+	        NOT "CONTROLE_STATUS_DB".StFaultGlobal.BRITADORES.BRT03;
+	        
+	        #PNR02.EL.EnHabilita := ("SELEÇÃO MANUAL" AND #PERMISSIVOS_PNR02) OR
+	        ("SELEÇÃO AUTOMÁTICO" AND #PERMISSIVOS_PNR02 AND "CONTROLE_STATUS_DB".StOnGlobal.BRITADORES.BRT03 AND "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP09);
+	        
+	        IF #PNR02.EL.StBotao AND NOT #PNR02.EL.StAnteriorBotao THEN
+	            IF #PNR02.EL.StOff THEN
+	                #PNR02.EL.CmdOn := true;
+	            ELSE
+	                #PNR02.EL.CmdOff := true;
+	            END_IF;
+	        END_IF;
+	        #PNR02.EL.StAnteriorBotao := #PNR02.EL.StBotao;
+	    END_REGION
+	    
+	    REGION "3. CORE e 4. MAP_OUT"
+	        #PNR02();
+	        "ACIONA PENEIRA VIBRATÓRIA 02" := #PNR02.EL.SdaF;
+	    END_REGION
+	END_REGION
+	
+	REGION "PNR 03 - PENEIRA BRITADOR 04 (VSI)"
+	    REGION "1. MAP_IN"
+	        #PNR03.EL.StBotao := "LIGA PENEIRA VIBRATÓRIA 03";
+	        #PNR03.EL.CmdFalhaReset := "RESET MESA DE CONTROLE";
+	        #PNR03.EL.EnFLigado := "PENEIRA VIBRATÓRIA 03 LIGADA";
+	        #PNR03.EL.EnFDispFalha := "TÉRMICO PENEIRA VIBRATÓRIA 03";
+	    END_REGION
+	    
+	    REGION "2. PROCESS"
+	        #PERMISSIVOS_PNR03 := "GERAL_EMERGENCIA_OK" AND
+	        NOT "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP13 AND
+	        NOT "CONTROLE_STATUS_DB".StFaultGlobal.BRITADORES.BRT04;
+	        
+	        #PNR03.EL.EnHabilita := ("SELEÇÃO MANUAL" AND #PERMISSIVOS_PNR03) OR
+	        ("SELEÇÃO AUTOMÁTICO" AND #PERMISSIVOS_PNR03 AND "CONTROLE_STATUS_DB".StOnGlobal.BRITADORES.BRT04 AND "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP13);
+	        
+	        IF #PNR03.EL.StBotao AND NOT #PNR03.EL.StAnteriorBotao THEN
+	            IF #PNR03.EL.StOff THEN
+	                #PNR03.EL.CmdOn := true;
+	            ELSE
+	                #PNR03.EL.CmdOff := true;
+	            END_IF;
+	        END_IF;
+	        #PNR03.EL.StAnteriorBotao := #PNR03.EL.StBotao;
+	    END_REGION
+	    
+	    REGION "3. CORE e 4. MAP_OUT"
+	        #PNR03();
+	        "ACIONA PENEIRA VIBRATÓRIA 03" := #PNR03.EL.SdaF;
+	    END_REGION
+	END_REGION
+	
+	REGION "PNR 04 - PENEIRA DE EXPEDIÇÃO"
+	    REGION "1. MAP_IN"
+	        #PNR04.EL.StBotao := "LIGA PENEIRA VIBRATÓRIA 04";
+	        #PNR04.EL.CmdFalhaReset := "RESET MESA DE CONTROLE";
+	        #PNR04.EL.EnFLigado := "PENEIRA VIBRATÓRIA 04 LIGADA";
+	        #PNR04.EL.EnFDispFalha := "TÉRMICO PENEIRA VIBRATÓRIA 04";
+	    END_REGION
+	    
+	    REGION "2. PROCESS"
+	        // Intertravamento Triplo: PNR04 só roda se TRP17, TRP18 E TRP19 estiverem OK.
+	        #PERMISSIVOS_PNR04 := "GERAL_EMERGENCIA_OK" AND
+	        NOT "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP17 AND
+	        NOT "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP18 AND
+	        NOT "CONTROLE_STATUS_DB".StFaultGlobal.TRANSPORTADORES.TRP19;
+	        
+	        #PNR04.EL.EnHabilita := ("SELEÇÃO MANUAL" AND #PERMISSIVOS_PNR04) OR
+	        ("SELEÇÃO AUTOMÁTICO" AND #PERMISSIVOS_PNR04 AND "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP17 AND "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP18 AND "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP19);
+	        
+	        IF #PNR04.EL.StBotao AND NOT #PNR04.EL.StAnteriorBotao THEN
+	            IF #PNR04.EL.StOff THEN
+	                #PNR04.EL.CmdOn := true;
+	            ELSE
+	                #PNR04.EL.CmdOff := true;
+	            END_IF;
+	        END_IF;
+	        #PNR04.EL.StAnteriorBotao := #PNR04.EL.StBotao;
+	    END_REGION
+	    
+	    REGION "3. CORE e 4. MAP_OUT"
+	        #PNR04();
+	        "ACIONA PENEIRA VIBRATÓRIA 04" := #PNR04.EL.SdaF;
+	    END_REGION
+	END_REGION
+	
+	REGION "ESCREVENDO STATUS GERAL"
+	    "CONTROLE_STATUS_DB".StSomaFalhas.StFalhaPeneiras := #PNR02.EL.StFault OR #PNR03.EL.StFault OR #PNR04.EL.StFault;
+	    
+	    "CONTROLE_STATUS_DB".StStartingGlobal.PENEIRAS.PNR02 := #PNR02.EL.StStarting;
+	    "CONTROLE_STATUS_DB".StOnGlobal.PENEIRAS.PNR02 := #PNR02.EL.StOn;
+	    "CONTROLE_STATUS_DB".StFaultGlobal.PENEIRAS.PNR02 := #PNR02.EL.StFault;
+	    
+	    "CONTROLE_STATUS_DB".StStartingGlobal.PENEIRAS.PNR03 := #PNR03.EL.StStarting;
+	    "CONTROLE_STATUS_DB".StOnGlobal.PENEIRAS.PNR03 := #PNR03.EL.StOn;
+	    "CONTROLE_STATUS_DB".StFaultGlobal.PENEIRAS.PNR03 := #PNR03.EL.StFault;
+	    
+	    "CONTROLE_STATUS_DB".StStartingGlobal.PENEIRAS.PNR04 := #PNR04.EL.StStarting;
+	    "CONTROLE_STATUS_DB".StOnGlobal.PENEIRAS.PNR04 := #PNR04.EL.StOn;
+	    "CONTROLE_STATUS_DB".StFaultGlobal.PENEIRAS.PNR04 := #PNR04.EL.StFault;
+	    
+	END_REGION
+END_FUNCTION_BLOCK
+

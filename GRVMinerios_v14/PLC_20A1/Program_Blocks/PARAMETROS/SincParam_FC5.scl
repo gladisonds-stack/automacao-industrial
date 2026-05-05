@@ -1,0 +1,424 @@
+FUNCTION "SincParam" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      InpDesabilitaSinc : Bool;
+   END_VAR
+
+
+BEGIN
+	// ==============================================================================
+	// BLOCO: SincParam
+	// FUNÇÃO: Sincronismo IHM <> DBs de Controle por Alteração de Valor
+	// ==============================================================================
+	
+	// Trava de Manutenção/Operação
+	IF #InpDesabilitaSinc THEN
+	    RETURN; // Aborta a execução se a tag for TRUE
+	END_IF;
+	
+	REGION BRITADORES
+	    
+	    REGION BR02        
+	        // ParPrepTime
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParPrepTime.BRITADORES.BR02 <> "BRITADORES_DB".BRT02.EL.ParPrepTime
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParPrepTime.BRITADORES.BR02 > T#0ms
+	        THEN
+	            "BRITADORES_DB".BRT02.EL.ParPrepTime := "IHM_DB".Parametros.Tempos_Processo.ParPrepTime.BRITADORES.BR02;
+	        END_IF;
+	        
+	        // ParSdaTime
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.BRITADORES.BR02 <> "BRITADORES_DB".BRT02.EL.ParSdaTime
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.BRITADORES.BR02 > T#0ms
+	        THEN
+	            "BRITADORES_DB".BRT02.EL.ParSdaTime := "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.BRITADORES.BR02;
+	        END_IF;
+	        
+	        // ParSdaDelayFalha
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.BRITADORES.BR02 <> "BRITADORES_DB".BRT02.EL.ParSdaDelayFalha
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.BRITADORES.BR02 > T#0ms
+	        THEN
+	            "BRITADORES_DB".BRT02.EL.ParSdaDelayFalha := "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.BRITADORES.BR02;
+	        END_IF;
+	        
+	        // ParSdaDelayIdling
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayIdling.BRITADORES.BR02 <> "BRITADORES_DB".BRT02.EL.ParSdaDelayIdling
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayIdling.BRITADORES.BR02 > T#0ms
+	        THEN
+	            "BRITADORES_DB".BRT02.EL.ParSdaDelayIdling := "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayIdling.BRITADORES.BR02;
+	        END_IF;
+	    END_REGION
+	    
+	    REGION BR03        
+	        // ParPrepTime
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParPrepTime.BRITADORES.BR03 <> "BRITADORES_DB".BRT03.EL.ParPrepTime
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParPrepTime.BRITADORES.BR03 > T#0ms
+	        THEN
+	            "BRITADORES_DB".BRT03.EL.ParPrepTime := "IHM_DB".Parametros.Tempos_Processo.ParPrepTime.BRITADORES.BR03;
+	        END_IF;
+	        
+	        // ParSdaTime
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.BRITADORES.BR03 <> "BRITADORES_DB".BRT03.EL.ParSdaTime
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.BRITADORES.BR03 > T#0ms
+	        THEN
+	            "BRITADORES_DB".BRT03.EL.ParSdaTime := "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.BRITADORES.BR03;
+	        END_IF;
+	        
+	        // ParSdaDelayFalha
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.BRITADORES.BR03 <> "BRITADORES_DB".BRT03.EL.ParSdaDelayFalha
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.BRITADORES.BR03 > T#0ms
+	        THEN
+	            "BRITADORES_DB".BRT03.EL.ParSdaDelayFalha := "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.BRITADORES.BR03;
+	        END_IF;
+	        
+	        // ParSdaDelayIdling
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayIdling.BRITADORES.BR03 <> "BRITADORES_DB".BRT03.EL.ParSdaDelayIdling
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayIdling.BRITADORES.BR03 > T#0ms
+	        THEN
+	            "BRITADORES_DB".BRT03.EL.ParSdaDelayIdling := "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayIdling.BRITADORES.BR03;
+	        END_IF;
+	    END_REGION
+	    
+	    REGION BR04        
+	        // ParPrepTime
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParPrepTime.BRITADORES.BR04 <> "BRITADORES_DB".BRT04.EL.ParPrepTime
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParPrepTime.BRITADORES.BR04 > T#0ms
+	        THEN
+	            "BRITADORES_DB".BRT04.EL.ParPrepTime := "IHM_DB".Parametros.Tempos_Processo.ParPrepTime.BRITADORES.BR04;
+	        END_IF;
+	        
+	        // ParPreLubeTime (Exclusivo BR04)
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParPreLubeTime.BRITADORES.BR04 <> "BRITADORES_DB".BRT04.EL.ParPreLubeTime
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParPreLubeTime.BRITADORES.BR04 > T#0ms
+	        THEN
+	            "BRITADORES_DB".BRT04.EL.ParPreLubeTime := "IHM_DB".Parametros.Tempos_Processo.ParPreLubeTime.BRITADORES.BR04;
+	        END_IF;
+	        
+	        // ParSdaTime
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.BRITADORES.BR04 <> "BRITADORES_DB".BRT04.EL.ParSdaTime
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.BRITADORES.BR04 > T#0ms
+	        THEN
+	            "BRITADORES_DB".BRT04.EL.ParSdaTime := "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.BRITADORES.BR04;
+	        END_IF;
+	        
+	        // ParSdaDelayFalha
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.BRITADORES.BR04 <> "BRITADORES_DB".BRT04.EL.ParSdaDelayFalha
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.BRITADORES.BR04 > T#0ms
+	        THEN
+	            "BRITADORES_DB".BRT04.EL.ParSdaDelayFalha := "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.BRITADORES.BR04;
+	        END_IF;
+	        
+	        // ParSdaDelayIdling
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayIdling.BRITADORES.BR04 <> "BRITADORES_DB".BRT04.EL.ParSdaDelayIdling
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayIdling.BRITADORES.BR04 > T#0ms
+	        THEN
+	            "BRITADORES_DB".BRT04.EL.ParSdaDelayIdling := "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayIdling.BRITADORES.BR04;
+	        END_IF;
+	    END_REGION
+	    
+	END_REGION
+	
+	REGION CALHAS
+	    
+	    REGION CVR01        
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.CALHAS.CVR01 <> "CALHA VIBRATÓRIA_DB".CVR01.EL.ParSdaTime
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.CALHAS.CVR01 > T#0ms
+	        THEN
+	            "CALHA VIBRATÓRIA_DB".CVR01.EL.ParSdaTime := "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.CALHAS.CVR01;
+	        END_IF;
+	        
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.CALHAS.CVR01 <> "CALHA VIBRATÓRIA_DB".CVR01.EL.ParSdaDelayFalha
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.CALHAS.CVR01 > T#0ms
+	        THEN
+	            "CALHA VIBRATÓRIA_DB".CVR01.EL.ParSdaDelayFalha := "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.CALHAS.CVR01;
+	        END_IF;
+	    END_REGION
+	    
+	    REGION CVR02      
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.CALHAS.CVR02 <> "CALHA VIBRATÓRIA_DB".CVR02.EL.ParSdaTime
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.CALHAS.CVR02 > T#0ms
+	        THEN
+	            "CALHA VIBRATÓRIA_DB".CVR02.EL.ParSdaTime := "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.CALHAS.CVR02;
+	        END_IF;
+	        
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.CALHAS.CVR02 <> "CALHA VIBRATÓRIA_DB".CVR02.EL.ParSdaDelayFalha
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.CALHAS.CVR02 > T#0ms
+	        THEN
+	            "CALHA VIBRATÓRIA_DB".CVR02.EL.ParSdaDelayFalha := "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.CALHAS.CVR02;
+	        END_IF;
+	    END_REGION
+	    
+	    REGION CVR03  
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.CALHAS.CVR03 <> "CALHA VIBRATÓRIA_DB".CVR03.EL.ParSdaTime
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.CALHAS.CVR03 > T#0ms
+	        THEN
+	            "CALHA VIBRATÓRIA_DB".CVR03.EL.ParSdaTime := "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.CALHAS.CVR03;
+	        END_IF;
+	        
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.CALHAS.CVR03 <> "CALHA VIBRATÓRIA_DB".CVR03.EL.ParSdaDelayFalha
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.CALHAS.CVR03 > T#0ms
+	        THEN
+	            "CALHA VIBRATÓRIA_DB".CVR03.EL.ParSdaDelayFalha := "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.CALHAS.CVR03;
+	        END_IF;
+	    END_REGION
+	    
+	END_REGION
+	
+	REGION PENEIRAS
+	    
+	    REGION PNR02
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.PENEIRAS.PNR02 <> "PENEIRAS_DB".PNR02.EL.ParSdaTime
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.PENEIRAS.PNR02 > T#0ms
+	        THEN
+	            "PENEIRAS_DB".PNR02.EL.ParSdaTime := "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.PENEIRAS.PNR02;
+	        END_IF;
+	        
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.PENEIRAS.PNR02 <> "PENEIRAS_DB".PNR02.EL.ParSdaDelayFalha
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.PENEIRAS.PNR02 > T#0ms
+	        THEN
+	            "PENEIRAS_DB".PNR02.EL.ParSdaDelayFalha := "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.PENEIRAS.PNR02;
+	        END_IF;
+	    END_REGION
+	    
+	    REGION PNR03
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.PENEIRAS.PNR03 <> "PENEIRAS_DB".PNR03.EL.ParSdaTime
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.PENEIRAS.PNR03 > T#0ms
+	        THEN
+	            "PENEIRAS_DB".PNR03.EL.ParSdaTime := "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.PENEIRAS.PNR03;
+	        END_IF;
+	        
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.PENEIRAS.PNR03 <> "PENEIRAS_DB".PNR03.EL.ParSdaDelayFalha
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.PENEIRAS.PNR03 > T#0ms
+	        THEN
+	            "PENEIRAS_DB".PNR03.EL.ParSdaDelayFalha := "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.PENEIRAS.PNR03;
+	        END_IF;
+	    END_REGION
+	    
+	    REGION PNR04
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.PENEIRAS.PNR04 <> "PENEIRAS_DB".PNR04.EL.ParSdaTime
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.PENEIRAS.PNR04 > T#0ms
+	        THEN
+	            "PENEIRAS_DB".PNR04.EL.ParSdaTime := "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.PENEIRAS.PNR04;
+	        END_IF;
+	        
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.PENEIRAS.PNR04 <> "PENEIRAS_DB".PNR04.EL.ParSdaDelayFalha
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.PENEIRAS.PNR04 > T#0ms
+	        THEN
+	            "PENEIRAS_DB".PNR04.EL.ParSdaDelayFalha := "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.PENEIRAS.PNR04;
+	        END_IF;
+	    END_REGION
+	    
+	END_REGION
+	
+	REGION TRANSPORTADORES
+	    
+	    REGION TRP06
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP06 <> "TRANSPORTADORES_DB".TRP06.EL.ParSdaTime
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP06 > T#0ms
+	        THEN
+	            "TRANSPORTADORES_DB".TRP06.EL.ParSdaTime := "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP06;
+	        END_IF;
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP06 <> "TRANSPORTADORES_DB".TRP06.EL.ParSdaDelayFalha
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP06 > T#0ms
+	        THEN
+	            "TRANSPORTADORES_DB".TRP06.EL.ParSdaDelayFalha := "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP06;
+	        END_IF;
+	    END_REGION
+	    
+	    REGION TRP07
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP07 <> "TRANSPORTADORES_DB".TRP07.EL.ParSdaTime
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP07 > T#0ms
+	        THEN
+	            "TRANSPORTADORES_DB".TRP07.EL.ParSdaTime := "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP07;
+	        END_IF;
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP07 <> "TRANSPORTADORES_DB".TRP07.EL.ParSdaDelayFalha
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP07 > T#0ms
+	        THEN
+	            "TRANSPORTADORES_DB".TRP07.EL.ParSdaDelayFalha := "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP07;
+	        END_IF;
+	    END_REGION
+	    
+	    REGION TRP08
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP08 <> "TRANSPORTADORES_DB".TRP08.EL.ParSdaTime
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP08 > T#0ms
+	        THEN
+	            "TRANSPORTADORES_DB".TRP08.EL.ParSdaTime := "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP08;
+	        END_IF;
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP08 <> "TRANSPORTADORES_DB".TRP08.EL.ParSdaDelayFalha
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP08 > T#0ms
+	        THEN
+	            "TRANSPORTADORES_DB".TRP08.EL.ParSdaDelayFalha := "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP08;
+	        END_IF;
+	    END_REGION
+	    
+	    REGION TRP09
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP09 <> "TRANSPORTADORES_DB".TRP09.EL.ParSdaTime
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP09 > T#0ms
+	        THEN
+	            "TRANSPORTADORES_DB".TRP09.EL.ParSdaTime := "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP09;
+	        END_IF;
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP09 <> "TRANSPORTADORES_DB".TRP09.EL.ParSdaDelayFalha
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP09 > T#0ms
+	        THEN
+	            "TRANSPORTADORES_DB".TRP09.EL.ParSdaDelayFalha := "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP09;
+	        END_IF;
+	    END_REGION
+	    
+	    REGION TRP10
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP10 <> "TRANSPORTADORES_DB".TRP10.EL.ParSdaTime
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP10 > T#0ms
+	        THEN
+	            "TRANSPORTADORES_DB".TRP10.EL.ParSdaTime := "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP10;
+	        END_IF;
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP10 <> "TRANSPORTADORES_DB".TRP10.EL.ParSdaDelayFalha
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP10 > T#0ms
+	        THEN
+	            "TRANSPORTADORES_DB".TRP10.EL.ParSdaDelayFalha := "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP10;
+	        END_IF;
+	    END_REGION
+	    
+	    REGION TRP11
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP11 <> "TRANSPORTADORES_DB".TRP11.EL.ParSdaTime
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP11 > T#0ms
+	        THEN
+	            "TRANSPORTADORES_DB".TRP11.EL.ParSdaTime := "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP11;
+	        END_IF;
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP11 <> "TRANSPORTADORES_DB".TRP11.EL.ParSdaDelayFalha
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP11 > T#0ms
+	        THEN
+	            "TRANSPORTADORES_DB".TRP11.EL.ParSdaDelayFalha := "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP11;
+	        END_IF;
+	    END_REGION
+	    
+	    REGION TRP12
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP12 <> "TRANSPORTADORES_DB".TRP12.EL.ParSdaTime
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP12 > T#0ms
+	        THEN
+	            "TRANSPORTADORES_DB".TRP12.EL.ParSdaTime := "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP12;
+	        END_IF;
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP12 <> "TRANSPORTADORES_DB".TRP12.EL.ParSdaDelayFalha
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP12 > T#0ms
+	        THEN
+	            "TRANSPORTADORES_DB".TRP12.EL.ParSdaDelayFalha := "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP12;
+	        END_IF;
+	    END_REGION
+	    
+	    REGION TRP13
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP13 <> "TRANSPORTADORES_DB".TRP13.EL.ParSdaTime
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP13 > T#0ms
+	        THEN
+	            "TRANSPORTADORES_DB".TRP13.EL.ParSdaTime := "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP13;
+	        END_IF;
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP13 <> "TRANSPORTADORES_DB".TRP13.EL.ParSdaDelayFalha
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP13 > T#0ms
+	        THEN
+	            "TRANSPORTADORES_DB".TRP13.EL.ParSdaDelayFalha := "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP13;
+	        END_IF;
+	    END_REGION
+	    
+	    REGION TRP14
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP14 <> "TRANSPORTADORES_DB".TRP14.EL.ParSdaTime
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP14 > T#0ms
+	        THEN
+	            "TRANSPORTADORES_DB".TRP14.EL.ParSdaTime := "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP14;
+	        END_IF;
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP14 <> "TRANSPORTADORES_DB".TRP14.EL.ParSdaDelayFalha
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP14 > T#0ms
+	        THEN
+	            "TRANSPORTADORES_DB".TRP14.EL.ParSdaDelayFalha := "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP14;
+	        END_IF;
+	    END_REGION
+	    
+	    REGION TRP15
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP15 <> "TRANSPORTADORES_DB".TRP15.EL.ParSdaTime
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP15 > T#0ms
+	        THEN
+	            "TRANSPORTADORES_DB".TRP15.EL.ParSdaTime := "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP15;
+	        END_IF;
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP15 <> "TRANSPORTADORES_DB".TRP15.EL.ParSdaDelayFalha
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP15 > T#0ms
+	        THEN
+	            "TRANSPORTADORES_DB".TRP15.EL.ParSdaDelayFalha := "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP15;
+	        END_IF;
+	    END_REGION
+	    
+	    REGION TRP16
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP16 <> "TRANSPORTADORES_DB".TRP16.EL.ParSdaTime
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP16 > T#0ms
+	        THEN
+	            "TRANSPORTADORES_DB".TRP16.EL.ParSdaTime := "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP16;
+	        END_IF;
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP16 <> "TRANSPORTADORES_DB".TRP16.EL.ParSdaDelayFalha
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP16 > T#0ms
+	        THEN
+	            "TRANSPORTADORES_DB".TRP16.EL.ParSdaDelayFalha := "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP16;
+	        END_IF;
+	    END_REGION
+	    
+	    REGION TRP17
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP17 <> "TRANSPORTADORES_DB".TRP17.EL.ParSdaTime
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP17 > T#0ms
+	        THEN
+	            "TRANSPORTADORES_DB".TRP17.EL.ParSdaTime := "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP17;
+	        END_IF;
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP17 <> "TRANSPORTADORES_DB".TRP17.EL.ParSdaDelayFalha
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP17 > T#0ms
+	        THEN
+	            "TRANSPORTADORES_DB".TRP17.EL.ParSdaDelayFalha := "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP17;
+	        END_IF;
+	    END_REGION
+	    
+	    REGION TRP18
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP18 <> "TRANSPORTADORES_DB".TRP18.EL.ParSdaTime
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP18 > T#0ms
+	        THEN
+	            "TRANSPORTADORES_DB".TRP18.EL.ParSdaTime := "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP18;
+	        END_IF;
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP18 <> "TRANSPORTADORES_DB".TRP18.EL.ParSdaDelayFalha
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP18 > T#0ms
+	        THEN
+	            "TRANSPORTADORES_DB".TRP18.EL.ParSdaDelayFalha := "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP18;
+	        END_IF;
+	    END_REGION
+	    
+	    REGION TRP19
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP19 <> "TRANSPORTADORES_DB".TRP19.EL.ParSdaTime
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP19 > T#0ms
+	        THEN
+	            "TRANSPORTADORES_DB".TRP19.EL.ParSdaTime := "IHM_DB".Parametros.Tempos_Processo.ParSdaTime.TRANSPORTADORES.TRP19;
+	        END_IF;
+	        IF "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP19 <> "TRANSPORTADORES_DB".TRP19.EL.ParSdaDelayFalha
+	            AND "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP19 > T#0ms
+	        THEN
+	            "TRANSPORTADORES_DB".TRP19.EL.ParSdaDelayFalha := "IHM_DB".Parametros.Tempos_Processo.ParSdaDelayFalha.TRANSPORTADORES.TRP19;
+	        END_IF;
+	    END_REGION
+	    
+	END_REGION
+	
+	REGION SIRENE
+	    
+	    // Sincroniza o tempo de toque
+	    IF "IHM_DB".Parametros.Sirene.ParTempoToque <> "SIRENE_DB".ParTempoToque
+	        AND "IHM_DB".Parametros.Sirene.ParTempoToque > T#0ms
+	    THEN
+	        "SIRENE_DB".ParTempoToque := "IHM_DB".Parametros.Sirene.ParTempoToque;
+	    END_IF;
+	    
+	    // Sincroniza o tempo de validade
+	    IF "IHM_DB".Parametros.Sirene.ParTempoValidade <> "SIRENE_DB".ParTempoValidade
+	        AND "IHM_DB".Parametros.Sirene.ParTempoValidade > T#0ms
+	    THEN
+	        "SIRENE_DB".ParTempoValidade := "IHM_DB".Parametros.Sirene.ParTempoValidade;
+	    END_IF;
+	    
+	    // Sincroniza o acionamento de teste da sirene
+	    //IF "IHM_DB".Comandos.CmdTesteSirene <> "SIRENE_DB".CmdTesteManual
+	    //    AND "IHM_DB".Comandos.CmdTesteSirene <> FALSE
+	    //THEN
+	    //    "SIRENE_DB".CmdTesteManual := "IHM_DB".Comandos.CmdTesteSirene;
+	    //END_IF;
+	    
+	END_REGION
+END_FUNCTION
+

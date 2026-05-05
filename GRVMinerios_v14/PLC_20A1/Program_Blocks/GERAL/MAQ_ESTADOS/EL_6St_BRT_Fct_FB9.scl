@@ -1,0 +1,397 @@
+FUNCTION_BLOCK "EL_6St_BRT_Fct"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR 
+      EL : "EL_6St_BRT_UDT";
+   END_VAR
+
+   VAR_TEMP 
+      tmpFalha : Bool;
+      TransitionTo : Struct
+         StOff : Bool;
+         StPreparing : Bool;
+         StStarting : Bool;
+         StOn : Bool;
+         StIdling : Bool;
+         StFault : Bool;
+      END_STRUCT;
+      emerg : Bool;
+      tmpFalhaLube : Bool;
+      tmpHabilita : Bool;
+      tmpSireneOk : Bool;
+      tmpNivelOk : Bool;
+      tmpPressaoOk : Bool;
+      tmpTempAltaOk : Bool;
+      tmpTempBaixaOk : Bool;
+      tmpTempMedia : Bool;
+   END_VAR
+
+
+BEGIN
+	// ==============================================================================
+	// BLOCO DE CONTROLE: BRITADOR CÔNICO (Ex: Britador 02 e 03)
+	// ARQUITETURA: Máquina de 6 Estados (ISA-88 Adaptada)
+	// PROTEÇÕES INCLUSAS: Aquecimento Prévio, Cooldown/Idling, Lube Overrun em Falha
+	//                     e Gestão Térmica Integrada (Radiador/Resistência/Turbina).
+	// ==============================================================================
+	
+	REGION Init
+	    // ==========================================================================
+	    // 1. SNAPSHOTS (TRAVAMENTO DE ENTRADAS FÍSICAS E INTERTRAVAMENTOS)
+	    // ==========================================================================
+	    #tmpFalha := #EL.EnFDispFalha; // Térmicos e Disjuntores Gerais
+	    #tmpFalhaLube := #EL.EnFDispFalha_BombaOleo;
+	    #tmpHabilita := #EL.EnHabilita;   // Inclui o status de Emergência
+	    #tmpSireneOk := "SIRENE_DB".StSireneOk;
+	    
+	    // Sinais Hidráulicos e Termodinâmicos
+	    #tmpNivelOk := #EL.EnNivelOleoOK;
+	    #tmpPressaoOk := #EL.EnFLigado; // Pressostato/Fluxostato da Bomba
+	    #tmpTempAltaOk := #EL.EnTempAltaOK; // 65°C NF (1 = Seguro, 0 = Ferveu/Trip)
+	    #tmpTempBaixaOk := #EL.EnTempBaixaOK; // 25°C NA (1 = Viscosidade OK, 0 = Frio)
+	    #tmpTempMedia := #EL.EnTempMediaAlta; // 35°C NA (1 = Quente, 0 = Normal)
+	END_REGION
+	
+	// ==============================================================================
+	// 2. LIMPEZA DAS FLAGS DE TRANSIÇÃO E INÍCIO DO LOOP
+	// ==============================================================================
+	#TransitionTo.StOff := 0;
+	#TransitionTo.StPreparing := 0;
+	#TransitionTo.StStarting := 0;
+	#TransitionTo.StOn := 0;
+	#TransitionTo.StIdling := 0;
+	#TransitionTo.StFault := 0;
+	
+	REPEAT
+	    REGION State_Safety_Net
+	        // ======================================================================
+	        // 3. REDE DE SEGURANÇA (COLD START / RECOVERY)
+	        // ======================================================================
+	        IF NOT #EL.StOff AND NOT #EL.StPreparing AND NOT #EL.StStarting AND
+	            NOT #EL.StOn AND NOT #EL.StIdling AND NOT #EL.StFault AND
+	            NOT #TransitionTo.StOff AND NOT #TransitionTo.StPreparing AND
+	            NOT #TransitionTo.StStarting AND NOT #TransitionTo.StOn AND
+	            NOT #TransitionTo.StIdling AND NOT #TransitionTo.StFault
+	        THEN
+	            #EL.StOff := 1;
+	            #EL.StStep := 0; // Desligado em repouso
+	        END_IF;
+	    END_REGION
+	    
+	    REGION StOff
+	        // ======================================================================
+	        // ESTADO 0: MÁQUINA DESLIGADA E EM REPOUSO
+	        // ======================================================================
+	        IF #TransitionTo.StOff THEN
+	            #TransitionTo.StOff := 0;
+	            #EL.StOff := 1;
+	            #EL.StPreparing := 0;
+	            #EL.StStarting := 0;
+	            #EL.StOn := 0;
+	            #EL.StIdling := 0;
+	            #EL.StFault := 0;
+	            
+	        ELSIF #EL.StOff THEN
+	            IF #tmpFalha OR #tmpFalhaLube OR NOT #tmpTempAltaOk THEN
+	                #EL.StOff := 0;
+	                #TransitionTo.StFault := 1;
+	                
+	            ELSIF #EL.CmdOn THEN
+	                IF #tmpHabilita THEN
+	                    #EL.StOff := 0;
+	                    #TransitionTo.StPreparing := 1;
+	                ELSE
+	                    #EL.StStep := 10; // Partida bloqueada: Falta permissivo
+	                END_IF;
+	                
+	            ELSE
+	                IF #EL.StStep <> 8 AND #EL.StStep <> 9 AND #EL.StStep <> 10 THEN
+	                    #EL.StStep := 0;
+	                END_IF;
+	            END_IF;
+	        END_IF;
+	    END_REGION
+	    
+	    REGION StPreparing
+	        // ======================================================================
+	        // ESTADO 1: PREPARAÇÃO TÉRMICA E HIDRÁULICA
+	        // ======================================================================
+	        IF #TransitionTo.StPreparing THEN
+	            #TransitionTo.StPreparing := 0;
+	            #EL.StPreparing := 1;
+	            #EL.StOff := 0;
+	            #EL.StIdling := 0;
+	            
+	            //  WATCHDOG GLOBAL: Cobre a Sirene + a Preparação Mecânica (Aquecimento/Óleo)
+	            #EL.SdaDelayFalha := "SIRENE_DB".ParTempoToque + #EL.ParPrepTime;
+	            
+	            #EL.StStep := 1; // Aguardando Sirene / Preparando...
+	            
+	        ELSIF #EL.StPreparing THEN
+	            // O Watchdog decrementa INDEPENDENTE da sirene (Proteção contra travamento)
+	            #EL.SdaDelayFalha := #EL.SdaDelayFalha - "Sys_DB".OutCycleTime;
+	            
+	            // 1. Monitoramento de Falhas e Aborto
+	            IF #tmpFalha OR #tmpFalhaLube OR NOT #tmpTempAltaOk THEN
+	                #EL.StPreparing := 0;
+	                #TransitionTo.StFault := 1;
+	                
+	            ELSIF #EL.CmdOff OR NOT #tmpHabilita THEN
+	                #EL.StStep := 8;
+	                #EL.StPreparing := 0;
+	                #TransitionTo.StOff := 1;
+	                
+	                // 2. Checagem de Estouro do Watchdog Global
+	            ELSIF #EL.SdaDelayFalha <= T#0ms THEN
+	                #EL.StStep := 12; // Falha: Timeout Global de Preparação (Sirene ou Óleo)
+	                #EL.StPreparing := 0;
+	                #TransitionTo.StFault := 1;
+	                
+	                // 3. Processo Físico (Bomba e Sensores) só após o toque da Sirene
+	            ELSIF #tmpSireneOk THEN
+	                // SUCESSO: Condições mecânicas atingidas dentro do tempo restante
+	                IF #tmpTempBaixaOk AND #tmpNivelOk AND #tmpPressaoOk THEN
+	                    #EL.StPreparing := 0;
+	                    #TransitionTo.StStarting := 1;
+	                END_IF;
+	            END_IF;
+	        END_IF;
+	    END_REGION
+	    
+	    REGION StStarting
+	        // ======================================================================
+	        // ESTADO 2: PARTIDA DO MOTOR PRINCIPAL
+	        // ======================================================================
+	        IF #TransitionTo.StStarting THEN
+	            #TransitionTo.StStarting := 0;
+	            #EL.StStarting := 1;
+	            #EL.StPreparing := 0;
+	            
+	            // Sirene já tocou, usamos apenas o tempo da inércia mecânica
+	            #EL.SdaTime := #EL.ParSdaTime;
+	            #EL.StStep := 2; // Aguardando partida do rotor principal...
+	            
+	        ELSIF #EL.StStarting THEN
+	            #EL.SdaTime := #EL.SdaTime - "Sys_DB".OutCycleTime;
+	            
+	            IF #tmpFalha OR #tmpFalhaLube OR NOT #tmpTempAltaOk THEN
+	                #EL.StStarting := 0;
+	                #TransitionTo.StFault := 1;
+	                
+	                // Se Nível, Pressão ou Temperatura caírem, recua para tentar recuperar
+	            ELSIF NOT #tmpTempBaixaOk OR NOT #tmpNivelOk OR NOT #tmpPressaoOk THEN
+	                #EL.StStarting := 0;
+	                #TransitionTo.StPreparing := 1;
+	                
+	            ELSIF #EL.SdaTime <= T#0ms THEN
+	                #EL.StStep := 13; // Falha Timeout do Motor Principal
+	                #EL.StStarting := 0;
+	                #TransitionTo.StFault := 1;
+	                
+	                // PROTEÇÃO DE INÉRCIA: Vai para Cooldown se abortado
+	            ELSIF #EL.CmdOff THEN
+	                #EL.StStep := 8;
+	                #EL.StStarting := 0;
+	                #TransitionTo.StIdling := 1;
+	                
+	            ELSIF NOT #tmpHabilita THEN
+	                #EL.StStep := 9;
+	                #EL.StStarting := 0;
+	                #TransitionTo.StIdling := 1;
+	                
+	                // SUCESSO: Inversor confirmou giro do rotor (E a janela da sirene ainda está ok)
+	            ELSIF #EL.EnFLigado_2 AND #tmpSireneOk THEN
+	                #EL.StStarting := 0;
+	                #TransitionTo.StOn := 1;
+	            END_IF;
+	        END_IF;
+	    END_REGION
+	    
+	    REGION StOn
+	        // ======================================================================
+	        // ESTADO 3: MÁQUINA EM OPERAÇÃO NORMAL
+	        // ======================================================================
+	        IF #TransitionTo.StOn THEN
+	            #TransitionTo.StOn := 0;
+	            #EL.StOn := 1;
+	            #EL.StStarting := 0;
+	            #EL.StStep := 3; // Em operação normal
+	            
+	        ELSIF #EL.StOn THEN
+	            IF #tmpFalha OR #tmpFalhaLube THEN
+	                #EL.StOn := 0;
+	                #TransitionTo.StFault := 1;
+	                
+	            ELSIF NOT #tmpTempAltaOk OR NOT #tmpNivelOk THEN
+	                #EL.StStep := 14; // Falha Nível Baixo ou Fervura
+	                #EL.StOn := 0;
+	                #TransitionTo.StFault := 1;
+	                
+	                // PROTEÇÃO DE INÉRCIA: Comandos param o Rotor, mas mantêm o Cooldown
+	            ELSIF #EL.CmdOff THEN
+	                #EL.StStep := 8;
+	                #EL.StOn := 0;
+	                #TransitionTo.StIdling := 1;
+	                
+	            ELSIF NOT #tmpHabilita THEN
+	                #EL.StStep := 9;
+	                #EL.StOn := 0;
+	                #TransitionTo.StIdling := 1;
+	                
+	                // Monitoramento da perda de feedback (Bomba ou Rotor)
+	            ELSIF NOT #tmpPressaoOk OR NOT #EL.EnFLigado_2 THEN
+	                #EL.SdaDelayFalha := #EL.SdaDelayFalha - "Sys_DB".OutCycleTime;
+	                IF #EL.SdaDelayFalha <= T#0ms THEN
+	                    #EL.StStep := 15; // Falha Perda de Feedback mecânico
+	                    #EL.StOn := 0;
+	                    #TransitionTo.StFault := 1;
+	                END_IF;
+	            ELSIF #tmpPressaoOk AND #EL.EnFLigado_2 THEN
+	                #EL.SdaDelayFalha := #EL.ParSdaDelayFalha; // ?? Aqui o filtro curto de queda funciona perfeitamente
+	            END_IF;
+	        END_IF;
+	    END_REGION
+	    
+	    REGION StIdling
+	        // ======================================================================
+	        // ESTADO 4: RESFRIAMENTO E INÉRCIA (COAST-DOWN)
+	        // ======================================================================
+	        IF #TransitionTo.StIdling THEN
+	            #TransitionTo.StIdling := 0;
+	            #EL.StIdling := 1;
+	            #EL.StOn := 0;
+	            #EL.StStarting := 0;
+	            #EL.SdaDelayIdling := #EL.ParSdaDelayIdling;
+	            #EL.StStep := 4; // Desligando: Resfriamento e Inércia ativos
+	            
+	        ELSIF #EL.StIdling THEN
+	            #EL.SdaDelayIdling := #EL.SdaDelayIdling - "Sys_DB".OutCycleTime;
+	            
+	            IF #tmpFalha OR #tmpFalhaLube OR NOT #tmpTempAltaOk THEN
+	                #EL.StIdling := 0;
+	                #TransitionTo.StFault := 1;
+	                
+	                // FLYING START: Permite abortar a parada e retomar produção
+	            ELSIF #EL.CmdOn AND #tmpHabilita THEN
+	                #EL.StIdling := 0;
+	                #TransitionTo.StPreparing := 1;
+	                
+	            ELSIF #EL.SdaDelayIdling <= T#0ms THEN
+	                #EL.StIdling := 0;
+	                #TransitionTo.StOff := 1;
+	            END_IF;
+	        END_IF;
+	    END_REGION
+	    
+	    REGION StFault
+	        // ======================================================================
+	        // ESTADO 5: FALHA ATIVA
+	        // ======================================================================
+	        IF #TransitionTo.StFault THEN
+	            #TransitionTo.StFault := 0;
+	            IF NOT #EL.StFault THEN
+	                #EL.SdaCntFalha += DINT#1;
+	                #EL.StFault := 1;
+	                #EL.StOff := 0;
+	                #EL.StPreparing := 0;
+	                #EL.StStarting := 0;
+	                #EL.StOn := 0;
+	                #EL.StIdling := 0;
+	                
+	                IF #EL.StStep < 12 OR #EL.StStep > 15 THEN
+	                    #EL.StStep := 11; // Falha de Segurança/Hardware
+	                END_IF;
+	            END_IF;
+	            
+	        ELSIF #EL.StFault THEN
+	            IF #EL.CmdFalhaReset AND NOT #tmpFalha AND NOT #tmpFalhaLube AND #tmpTempAltaOk THEN
+	                #EL.StFault := 0;
+	                #TransitionTo.StOff := 1;
+	            END_IF;
+	        END_IF;
+	    END_REGION
+	    
+	UNTIL NOT #TransitionTo.StOff AND NOT #TransitionTo.StPreparing AND NOT #TransitionTo.StStarting AND
+	    NOT #TransitionTo.StOn AND NOT #TransitionTo.StIdling AND NOT #TransitionTo.StFault
+	END_REPEAT;
+	
+	REGION Global_End
+	    // ==========================================================================
+	    // SINALIZAÇÃO E LIMPEZA
+	    // ==========================================================================
+	    #EL.SdaFalhaReset := #EL.StFault AND "Clock_2Hz";
+	    #EL.CmdOn := 0;
+	    #EL.CmdOff := 0;
+	    #EL.CmdFalhaReset := 0;
+	    
+	    // ==========================================================================
+	    // LUBE OVERRUN TIMER (Protege o mancal se o Britador entrar em Falha)
+	    // ==========================================================================
+	    IF #EL.StStarting OR #EL.StOn OR #EL.StIdling THEN
+	        #EL.StLubeOverrunTime := #EL.ParSdaDelayIdling;
+	    ELSE
+	        #EL.StLubeOverrunTime := #EL.StLubeOverrunTime - "Sys_DB".OutCycleTime;
+	        IF #EL.StLubeOverrunTime < T#0ms THEN
+	            #EL.StLubeOverrunTime := T#0ms;
+	        END_IF;
+	    END_IF;
+	    
+	    // ==========================================================================
+	    // GESTÃO TERMODINÂMICA E SAÍDAS FÍSICAS
+	    // ==========================================================================
+	    
+	    // 1. MOTOR 1: BOMBA DE ÓLEO
+	    #EL.SdaF := (
+	    (#EL.StPreparing AND #tmpSireneOk AND #tmpTempBaixaOk) OR // Gatekeeper: Bomba só parte com Passe Livre
+	    #EL.StStarting OR
+	    #EL.StOn OR
+	    #EL.StIdling OR
+	    (#EL.StLubeOverrunTime > T#0ms)
+	    ) AND NOT #tmpFalhaLube;
+	    
+	    // 2. RESISTÊNCIA DE AQUECIMENTO
+	    // Gatekeeper: Resistência só liga com Passe Livre
+	    #EL.SdaAquecedor := (#EL.StPreparing AND #tmpSireneOk)
+	    AND NOT #tmpTempBaixaOk
+	    AND NOT #tmpTempMedia
+	    AND #tmpTempAltaOk;
+	    
+	    // 3. VENTOINHA DO RADIADOR DE ÓLEO
+	    #EL.SdaVentoinha := #EL.SdaF AND #tmpTempMedia;
+	    
+	    // 4. TURBINA DE PRESSURIZAÇÃO (Dust Seal)
+	    #EL.SdaTurbinaPust := #EL.SdaF;
+	    
+	    // 5. MOTOR 2: ROTOR PRINCIPAL DO BRITADOR CÔNICO
+	    #EL.SdaF_2 := (#EL.StOn OR (#EL.StStarting AND #tmpSireneOk))
+	    AND #tmpHabilita
+	    AND NOT #tmpFalha
+	    AND NOT #EL.StFault
+	    AND #EL.SdaF;
+	END_REGION
+	
+	REGION Tabela de referência de Status
+	(*
+	 =========================================================
+	 TABELA DE REFERÊNCIA IHM: STATUS CÔNICO (6 ESTADOS)
+	 =========================================================      
+	   |ID    |Categoria   |Descrição 
+	 ==|======|============|================================= 
+	   |0     |Operação    |Desligado em repouso
+	   |1     |Operação    |Sirene e preparação da unidade hidráulica...
+	   |2     |Operação    |Aguardando partida do rotor principal...
+	   |3     |Operação    |Em operação normal
+	   |4     |Operação    |Desligando: Resfriamento e Inércia ativos
+	   |8     |Aviso       |Desligado por comando
+	   |9     |Aviso       |Desligado por perder permissivo (Habilita)
+	   |10    |Aviso       |Partida bloqueada: Falta permissivo (Habilita)
+	   |11    |Falha       |Falha de Segurança/Hardware (Térmicos)
+	   |12    |Falha       |Falha: Timeout de Aquecimento/Pressão de Óleo
+	   |13    |Falha       |Falha de Partida: Timeout do Motor Principal
+	   |14    |Falha       |Falha: Nível Baixo ou Fervura (Trip Térmico)
+	   |15    |Falha       |Falha em Operação: Perda de Feedback mecânico
+	 =========================================================
+	 *)
+	END_REGION
+END_FUNCTION_BLOCK
+

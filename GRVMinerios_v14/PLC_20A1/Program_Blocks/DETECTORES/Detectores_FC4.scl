@@ -1,0 +1,88 @@
+FUNCTION "Detectores" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      CmdReset : Bool;
+   END_VAR
+
+   VAR_TEMP 
+      tmpDtc01 : Bool;
+      tmpDtc02 : Bool;
+      tmpDtc03 : Bool;
+      tmpResetLocal01 : Bool;
+      tmpResetLocal02 : Bool;
+      tmpResetLocal03 : Bool;
+      tmpCmdReset : Bool;
+   END_VAR
+
+
+BEGIN
+	// ==============================================================================
+	// BLOCO: FC4 - GESTÃO DE DETECTORES DE METAL
+	// ARQUITETURA: Lógica Inversa (NF), Detecção e Rearme Condicional
+	// ==============================================================================
+	
+	REGION "1. MAP_IN (Mapeamento de Entradas)"
+	    #tmpCmdReset := #CmdReset;
+	    
+	    // Snapshot das entradas físicas (Tratadas como NF: 0 = Falha)
+	    #tmpDtc01 := "DETECTOR 01 METAL"; // %I12.7
+	    #tmpDtc02 := "DETECTOR 02 METAL"; // %I13.0
+	    #tmpDtc03 := "DETECTOR 03 METAL"; // %I13.1
+	    
+	    // Mapeamento dos botões de reset locais
+	    #tmpResetLocal01 := "RESET DETECTOR DE METAL 01"; // %I13.6
+	    #tmpResetLocal02 := "RESET DETECTOR DE METAL 02"; // %I13.7
+	    #tmpResetLocal03 := "RESET DETECTOR DE METAL 03"; // %I14.0
+	END_REGION
+	
+	REGION "2. DETECTOR DTC01 (TC 06)"
+	    
+	    // --- Lógica de Detecção (Trip em 0) ---
+	    IF NOT #tmpDtc01 THEN
+	        "CONTROLE_STATUS_DB".StFalhaDetectores.DTC01 := TRUE;
+	    END_IF;
+	    
+	    // --- Lógica de Reset Condicional (Bloqueio se sensor em 0) ---
+	    IF (#tmpCmdReset OR #tmpResetLocal01) AND "CONTROLE_STATUS_DB".StFalhaDetectores.DTC01 THEN
+	        // Só permite limpar a memória se o sensor físico estiver em 1 (Saudável)
+	        IF #tmpDtc01 THEN
+	            "CONTROLE_STATUS_DB".StFalhaDetectores.DTC01 := FALSE;
+	        END_IF;
+	    END_IF;
+	    
+	END_REGION
+	
+	REGION "3. DETECTOR DTC02 (TC 12)"
+	    
+	    // --- Lógica de Detecção ---
+	    IF NOT #tmpDtc02 THEN
+	        "CONTROLE_STATUS_DB".StFalhaDetectores.DTC02 := TRUE;
+	    END_IF;
+	    
+	    // --- Lógica de Reset Condicional ---
+	    IF (#tmpCmdReset OR #tmpResetLocal02) AND "CONTROLE_STATUS_DB".StFalhaDetectores.DTC02 THEN
+	        IF #tmpDtc02 THEN
+	            "CONTROLE_STATUS_DB".StFalhaDetectores.DTC02 := FALSE;
+	        END_IF;
+	    END_IF;
+	    
+	END_REGION
+	
+	REGION "4. DETECTOR DTC03 (TC 16)"
+	    
+	    // --- Lógica de Detecção ---
+	    IF NOT #tmpDtc03 THEN
+	        "CONTROLE_STATUS_DB".StFalhaDetectores.DTC03 := TRUE;
+	    END_IF;
+	    
+	    // --- Lógica de Reset Condicional ---
+	    IF (#tmpCmdReset OR #tmpResetLocal03) AND "CONTROLE_STATUS_DB".StFalhaDetectores.DTC03 THEN
+	        IF #tmpDtc03 THEN
+	            "CONTROLE_STATUS_DB".StFalhaDetectores.DTC03 := FALSE;
+	        END_IF;
+	    END_IF;
+	    
+	END_REGION
+END_FUNCTION
+

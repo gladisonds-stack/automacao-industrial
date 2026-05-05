@@ -1,0 +1,10 @@
+TYPE "UDT_STATUS_BRITADORES"
+VERSION : 0.1
+   STRUCT
+      BRT02 : Bool;
+      BRT03 : Bool;
+      BRT04 : Bool;
+   END_STRUCT;
+
+END_TYPE
+

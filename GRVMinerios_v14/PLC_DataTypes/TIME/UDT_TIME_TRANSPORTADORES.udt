@@ -1,0 +1,20 @@
+TYPE "UDT_TIME_TRANSPORTADORES"
+VERSION : 0.1
+   STRUCT
+      TRP06 : Time;
+      TRP07 : Time;
+      TRP08 : Time;
+      TRP09 : Time;
+      TRP10 : Time;
+      TRP11 : Time;
+      TRP12 : Time;
+      TRP13 : Time;
+      TRP14 : Time;
+      TRP15 : Time;
+      TRP16 : Time;
+      TRP17 : Time;
+      TRP18 : Time;
+      TRP19 : Time;
+   END_STRUCT;
+
+END_TYPE

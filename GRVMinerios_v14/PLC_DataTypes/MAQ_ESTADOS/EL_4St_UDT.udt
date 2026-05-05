@@ -1,0 +1,27 @@
+TYPE "EL_4St_UDT"
+VERSION : 0.1
+   STRUCT
+      CmdFalhaReset : Bool;
+      CmdOn : Bool;
+      CmdOff : Bool;
+      EnHabilita : Bool;
+      EnManual : Bool;
+      EnFLigado : Bool;
+      EnFDispFalha : Bool;
+      StOn : Bool;
+      StOff : Bool := true;
+      StStarting : Bool;
+      StFault : Bool;
+      SdaF : Bool;
+      SdaCntFalha : DInt;
+      SdaFalhaReset : Bool;
+      SdaTime : Time;
+      SdaDelayFalha : Time;
+      ParSdaTime : Time := T#5s;
+      ParSdaDelayFalha : Time := T#2s;
+      StBotao : Bool;
+      StAnteriorBotao : Bool;
+      StStep : UInt;
+   END_STRUCT;
+
+END_TYPE

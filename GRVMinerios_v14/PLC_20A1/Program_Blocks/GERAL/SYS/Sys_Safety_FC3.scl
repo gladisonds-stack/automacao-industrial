@@ -1,0 +1,87 @@
+FUNCTION "Sys_Safety" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_TEMP 
+      tmpEmergMesaOk : Bool;
+      tmpEmergPnConicoOk : Bool;
+      tmpEmergPnVsiOk : Bool;
+      tmpEmergConicoSecOk : Bool;
+      tmpEmergExtBrt02Ok : Bool;
+      tmpEmergExtBrt03Ok : Bool;
+      tmpEmergExtBrt04Ok : Bool;
+      tmpCmdReset : Bool;
+      tmpLinhaEmergOk : Bool;
+   END_VAR
+
+
+BEGIN
+	// ==============================================================================
+	// BLOCO: FC3 - GESTÃO DE SEGURANÇA E SINALIZAÇÃO
+	// ARQUITETURA: Mapeamento Simbólico e Lógica Segura (Inversão)
+	// ==============================================================================
+	
+	REGION "1. MAP_IN (Sanitização e Inversão de Sinais)"
+	    #tmpEmergMesaOk := NOT "EMERGÊNCIA MESA DE CONTROLE";           // %I0.0
+	    #tmpEmergPnConicoOk := NOT "EMERGÊNCIA PAINEL BRITADOR CÔNICO";     // %I12.6
+	    #tmpEmergPnVsiOk := NOT "EMERGÊNCIA PAINEL BRITADOR VSI";        // %I12.0
+	    #tmpEmergConicoSecOk := NOT "EMERGÊNCIA PAINEL SECUNDÁRIO";          // %I3.5
+	    #tmpEmergExtBrt02Ok := NOT "EMERGÊNCIA EXTERNA BRITADOR CÔNICO 02"; // %I13.2
+	    #tmpEmergExtBrt03Ok := NOT "EMERGÊNCIA EXTERNA BRITADOR CÔNICO 03"; // %I13.3
+	    #tmpEmergExtBrt04Ok := NOT "EMERGÊNCIA EXTERNA BRITADOR VSI 04";    // %I13.4
+	    
+	    #tmpCmdReset := "RESET MESA DE CONTROLE";                    // %I0.1
+	END_REGION
+	
+	REGION "2. PROCESS (Intertravamento Global)"
+	    #tmpLinhaEmergOk := #tmpEmergMesaOk AND
+	    #tmpEmergPnConicoOk AND
+	    #tmpEmergPnVsiOk AND
+	    #tmpEmergConicoSecOk AND
+	    #tmpEmergExtBrt02Ok AND
+	    #tmpEmergExtBrt03Ok AND
+	    #tmpEmergExtBrt04Ok;
+	    
+	    IF NOT #tmpLinhaEmergOk THEN
+	        "GERAL_EMERGENCIA_OK" := FALSE; // %M1.1
+	    ELSIF #tmpLinhaEmergOk AND #tmpCmdReset THEN
+	        "GERAL_EMERGENCIA_OK" := TRUE;
+	    END_IF;
+	END_REGION
+	
+	REGION "3. MAP_OUT (Saídas Físicas)"
+	    
+	    // --- Sinalização do Botão de Reset ---
+	    IF #tmpCmdReset THEN
+	        "RESET SEGURANÇA" := TRUE; // Acionamento contínuo durante pressionamento
+	        
+	    ELSIF (#tmpLinhaEmergOk AND NOT "GERAL_EMERGENCIA_OK") OR "CONTROLE_STATUS_DB".StFaultGlobal.GLOBAL  THEN
+	        // Pisca unificado (1Hz) pedindo atenção do operador, 
+	        // seja para destravar memória de emergência ou falha de processo.
+	        "RESET SEGURANÇA" := "Clock_1Hz";
+	        
+	    ELSE
+	        // Apagado: Sistema rodando OK, ou Emergência ainda batida no campo
+	        "RESET SEGURANÇA" := FALSE;
+	    END_IF;
+	    
+	    // --- Torre Luminosa Vermelha ---
+	    IF NOT #tmpLinhaEmergOk THEN
+	        "VERMELHO - TORRE LUMINOSA" := TRUE; // EMERGÊNCIA FÍSICA ATIVA: Estático (Prioridade Máxima)
+	        
+	    ELSIF "CONTROLE_STATUS_DB".StFaultGlobal.GLOBAL  OR (NOT "GERAL_EMERGENCIA_OK") THEN
+	        "VERMELHO - TORRE LUMINOSA" := "Clock_1Hz"; // FALHA OU AGUARDANDO REARME: Pisca Único
+	        
+	    ELSE
+	        "VERMELHO - TORRE LUMINOSA" := FALSE; // MÁQUINA LIVRE: Apagado
+	    END_IF;
+	    
+	    // --- Torre Luminosa Verde ---
+	    "VERDE - TORRE LUMINOSA" := (NOT "CONTROLE_STATUS_DB".StFaultGlobal.GLOBAL ) AND "GERAL_EMERGENCIA_OK"; // %Q1.1
+	    
+	    // --- Sirene e Torre Luminosa Amarela ---
+	    //"SIRENE 220VCA" := "SIRENE_DB".CmdSireneFisica OR "SIRENE_DB".CmdTesteManual; // %Q8.1
+	    "AMARELO - TORRE LUMINOSA" := "SIRENE_DB".CmdSireneFisica AND "Clock_1Hz"; // %Q2.0
+	    
+	END_REGION
+END_FUNCTION
+

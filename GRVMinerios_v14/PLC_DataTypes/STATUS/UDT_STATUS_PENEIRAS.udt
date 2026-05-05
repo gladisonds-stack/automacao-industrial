@@ -1,0 +1,10 @@
+TYPE "UDT_STATUS_PENEIRAS"
+VERSION : 0.1
+   STRUCT
+      PNR02 : Bool;
+      PNR03 : Bool;
+      PNR04 : Bool;
+   END_STRUCT;
+
+END_TYPE
+

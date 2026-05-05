@@ -1,0 +1,211 @@
+FUNCTION_BLOCK "BRITADORES"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR 
+      BRT02  : "EL_6St_BRT_Fct";
+      BRT03 : "EL_6St_BRT_Fct";
+      BRT04  : "EL_7St_Fct";
+   END_VAR
+
+   VAR_TEMP 
+      tempNormalizado : Real;
+      permissivos_brt02 : Bool;
+      permissivos_brt03 : Bool;
+      permissivos_brt04 : Bool;
+      tempNorm03 : Real;
+      tempNorm02 : Real;
+   END_VAR
+
+
+BEGIN
+	// ==============================================================================
+	// BLOCO: FB2 - GESTÃO DE BRITADORES (CÔNICOS 02/03 E VSI 04)
+	// ARQUITETURA: Encapsulamento em Regions (Map_In -> Process -> Core -> Map_Out)
+	// ==============================================================================
+	
+	REGION "BRITADOR 02 - CÔNICO"
+	    
+	    REGION "1. MAP_IN (Fachada de Hardware e Correções)"
+	        // Comandos e Feedbacks Gerais
+	        #BRT02.EL.StBotao := "LIGA BRITADOR CÔNICO 02";
+	        #BRT02.EL.CmdFalhaReset := "RESET MESA DE CONTROLE";
+	        #BRT02.EL.EnFLigado := "BRITADOR 02 LIGADO"; // Feedback do Rotor
+	        #BRT02.EL.EnFDispFalha := "FALHA BRITADOR 02";
+	        #BRT02.EL.EnFDispFalha_BombaOleo := "FALHA BRITADOR 02"; // Hardware não separou falha da bomba
+	        
+	        // Termodinâmica e Fluidos (Mapeamento Direto)
+	        #BRT02.EL.EnTempBaixaOK := "01 BAIXO TEMPERATURA DO ÓLEO"; // NA Físico (1 = Viscosidade OK)
+	        #BRT02.EL.EnTempMediaAlta := "01 LIGAR VENTOINHA";         // NA Físico (1 = Óleo Quente)
+	        #BRT02.EL.EnTempAltaOK := "01 ALTA TEMPERATURA DO ÓLEO";   // NF Físico (1 = Seguro / 0 = Trip)
+	        #BRT02.EL.EnNivelOleoOK := "01 BAIXO NÍVEL DE ÓLEO";       // Boia Física (1 = Nível OK)
+	        
+	        // Leitura Analógica: Pressão Hidroset
+	        #tempNorm02 := NORM_X(MIN := 5530, VALUE := "01 EA PRESSAO HIDROSET", MAX := 27648);
+	        #BRT02.EL.StHidrosetPress := SCALE_X(MIN := 0.0, VALUE := #tempNorm02, MAX := 25.0);
+	    END_REGION
+	    
+	    REGION "2. INTERTRAVAMENTOS DE PROCESSO (Process)"
+	        // Proteção de Subestação (Exclusão Mútua: Cônicos não rodam junto com VSI)
+	        #permissivos_brt02 := "GERAL_EMERGENCIA_OK" AND NOT "CONTROLE_STATUS_DB".StOnGlobal.BRITADORES.BRT04;
+	        
+	        // Habilitação Auto/Manual (Aguardando TRP07 no Automático)
+	        #BRT02.EL.EnHabilita := ("SELEÇÃO MANUAL" AND #permissivos_brt02) OR
+	        ("SELEÇÃO AUTOMÁTICO" AND #permissivos_brt02 AND "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP07);
+	        
+	        // Tratamento do Botão da IHM (Toggle Pulsado)
+	        IF #BRT02.EL.StBotao AND NOT #BRT02.EL.StAnteriorBotao THEN
+	            IF #BRT02.EL.StOff OR #BRT02.EL.StIdling THEN
+	                #BRT02.EL.CmdOn := true;
+	            ELSE
+	                #BRT02.EL.CmdOff := true;
+	            END_IF;
+	        END_IF;
+	        #BRT02.EL.StAnteriorBotao := #BRT02.EL.StBotao;
+	    END_REGION
+	    
+	    REGION "3. MÁQUINA DE ESTADOS (Core)"
+	        // Instância da FB9 (Máquina de 6 Estados - Cônico Definitivo)
+	        #BRT02();
+	    END_REGION
+	    
+	    REGION "4. MAP_OUT (Comandos Físicos e Periféricos)"
+	        // Comandos de Potência Principal (Rotor = Motor 2 na FB9)
+	        "ACIONA BRITADOR 02" := #BRT02.EL.SdaF_2;
+	        "DESLIGA BRITADOR 02" := NOT #BRT02.EL.SdaF_2;
+	        "BRITADOR CÔNICO 02 FALHA" := #BRT02.EL.StFault;
+	        
+	        // Periféricos Térmicos (Saídas geridas 100% pela FB9)
+	        "01 LUBRIFICAÇÃO" := #BRT02.EL.SdaF; // Bomba de Óleo = Motor 1 na FB9
+	        "01 RESISTENCIA" := #BRT02.EL.SdaAquecedor;
+	        "01 VENTILADOR" := #BRT02.EL.SdaVentoinha;
+	        
+	        // Correção de Anomalia Física: Turbina montada com relé NF no painel
+	        "01 TURBINA" := NOT #BRT02.EL.SdaTurbinaPust;
+	        
+	        // Comandos Manuais do Hidroset (Intertravamento contra Curto-Circuito L1/L3)
+	        "01 HIDROSET SOBE" := "01 HIDROSET SUBINDO" AND NOT "01 HIDROSET DESCENDO";
+	        "01 HIDROSET CONTATORA DESCE" := "01 HIDROSET DESCENDO";
+	    END_REGION
+	    
+	END_REGION
+	
+	REGION "BRITADOR 03 - CÔNICO"
+	    
+	    REGION "1. MAP_IN (Correções de Hardware)"
+	        #BRT03.EL.StBotao := "LIGA BRITADOR CÔNICO 03";
+	        #BRT03.EL.CmdFalhaReset := "RESET MESA DE CONTROLE";
+	        #BRT03.EL.EnFLigado := "BRITADOR 03 LIGADO";
+	        #BRT03.EL.EnFDispFalha := "FALHA BRITADOR 03";
+	        #BRT03.EL.EnFDispFalha_BombaOleo := "FALHA BRITADOR 03";
+	        
+	        // CORREÇÃO DE TAGS INVERTIDAS NO PAINEL DO BRT03
+	        #BRT03.EL.EnTempBaixaOK := NOT "02 BAIXO TEMPERATURA DO ÓLEO"; // Era NF, o NOT transforma em "1 = OK"
+	        #BRT03.EL.EnTempMediaAlta := "02 LIGAR VENTOINHA";             // Mantido NA
+	        #BRT03.EL.EnTempAltaOK := NOT "02 ALTA TEMPERATURA DO ÓLEO";   // Era NA, o NOT garante o Fail-Safe Lógico
+	        #BRT03.EL.EnNivelOleoOK := "02 BAIXO NÍVEL DE ÓLEO";
+	        
+	        #tempNorm03 := NORM_X(MIN := 5530, VALUE := "02 EA PRESSAO HIDROSET", MAX := 27648);
+	        #BRT03.EL.StHidrosetPress := SCALE_X(MIN := 0.0, VALUE := #tempNorm03, MAX := 25.0);
+	    END_REGION
+	    
+	    REGION "2. INTERTRAVAMENTOS DE PROCESSO"
+	        #permissivos_brt03 := "GERAL_EMERGENCIA_OK" AND NOT "CONTROLE_STATUS_DB".StOnGlobal.BRITADORES.BRT04;
+	        
+	        #BRT03.EL.EnHabilita := ("SELEÇÃO MANUAL" AND #permissivos_brt03) OR
+	        ("SELEÇÃO AUTOMÁTICO" AND #permissivos_brt03 AND "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP10);
+	        
+	        IF #BRT03.EL.StBotao AND NOT #BRT03.EL.StAnteriorBotao THEN
+	            IF #BRT03.EL.StOff OR #BRT03.EL.StIdling THEN
+	                #BRT03.EL.CmdOn := true;
+	            ELSE
+	                #BRT03.EL.CmdOff := true;
+	            END_IF;
+	        END_IF;
+	        #BRT03.EL.StAnteriorBotao := #BRT03.EL.StBotao;
+	    END_REGION
+	    
+	    REGION "3. MÁQUINA DE ESTADOS"
+	        #BRT03();
+	    END_REGION
+	    
+	    REGION "4. MAP_OUT"
+	        "ACIONA BRITADOR 03" := #BRT03.EL.SdaF_2; // Rotor
+	        "DESLIGA BRITADOR 03" := NOT #BRT03.EL.SdaF_2;
+	        "BRITADOR CÔNICO 03 FALHA" := #BRT03.EL.StFault;
+	        
+	        "02 LUBRIFICAÇÃO" := #BRT03.EL.SdaF; // Bomba
+	        "02 RESISTENCIA" := #BRT03.EL.SdaAquecedor;
+	        "02 VENTILADOR" := #BRT03.EL.SdaVentoinha;
+	        "02 TURBINA" := #BRT03.EL.SdaTurbinaPust; // Relé físico montado corretamente (sem NOT)
+	        
+	        "02 HIDROSET SOBE" := "02 HIDROSET SUBINDO";
+	        "02 HIDROSET DESCE" := "02 HIDROSET DESCENDO" AND NOT "02 HIDROSET SUBINDO"; // Prevenção de Curto
+	    END_REGION
+	    
+	END_REGION
+	
+	REGION "BRITADOR 04 - VSI"
+	    
+	    REGION "1. MAP_IN"
+	        #BRT04.EL.StBotao := "LIGA BRITADOR CÔNICO 04"; // Adesivo IHM incorreto (É VSI)
+	        #BRT04.EL.CmdFalhaReset := "RESET MESA DE CONTROLE";
+	        
+	        #BRT04.EL.EnFLigado := "BRITADOR 04 LIGADO"; // Feedback Motor 1
+	        #BRT04.EL.EnFLigado_2 := "BRITADOR 04 MOTOR 2 LIGADO"; // Feedback Motor 2
+	        
+	        #BRT04.EL.EnFDispFalha_BombaOleo := "FALHA BRITADOR 04"; // Motor 1
+	        #BRT04.EL.EnFDispFalha := "FALHA BRITADOR 04 MOTOR 2";   // Motor 2
+	    END_REGION
+	    
+	    REGION "2. INTERTRAVAMENTOS DE PROCESSO"
+	        // Exclusão Mútua: VSI não roda junto com os Cônicos (Limitação Subestação)
+	        #permissivos_brt04 := "GERAL_EMERGENCIA_OK" AND
+	        NOT "CONTROLE_STATUS_DB".StOnGlobal.BRITADORES.BRT02 AND
+	        NOT "CONTROLE_STATUS_DB".StOnGlobal.BRITADORES.BRT03;
+	        
+	        #BRT04.EL.EnHabilita := ("SELEÇÃO MANUAL" AND #permissivos_brt04) OR
+	        ("SELEÇÃO AUTOMÁTICO" AND #permissivos_brt04 AND "CONTROLE_STATUS_DB".StOnGlobal.TRANSPORTADORES.TRP14);
+	        
+	        // Tratamento do Botão (Proteção Flying Start por causa da inércia do VSI)
+	        IF #BRT04.EL.StBotao AND NOT #BRT04.EL.StAnteriorBotao THEN
+	            IF #BRT04.EL.StOff OR #BRT04.EL.StIdling THEN
+	                #BRT04.EL.CmdOn := true;
+	            ELSE
+	                #BRT04.EL.CmdOff := true;
+	            END_IF;
+	        END_IF;
+	        #BRT04.EL.StAnteriorBotao := #BRT04.EL.StBotao;
+	    END_REGION
+	    
+	    REGION "3. MÁQUINA DE ESTADOS"
+	        // Instância da FB_VSI (Máquina de 7 Estados - Cooldown e Overrun)
+	        #BRT04();
+	    END_REGION
+	    
+	    REGION "4. MAP_OUT"
+	        "ACIONA BRITADOR 04" := #BRT04.EL.SdaF; // SoftStarter Motor 1
+	        "DESLIGA BRITADOR 04" := NOT #BRT04.EL.SdaF;
+	        "ACIONA BRITADOR 04 MOTOR 2" := #BRT04.EL.SdaF_2; // Partida Direta Motor 2
+	        "BRITADOR CÔNICO 04 FALHA" := #BRT04.EL.StFault;
+	    END_REGION
+	    
+	END_REGION
+	
+	REGION "ESCREVENDO STATUS GERAL"
+	    // Sinalizações Globais para a IHM (SCADA) e Intertravamentos a jusante
+	    "CONTROLE_STATUS_DB".StSomaFalhas.StFalhaBritadores := #BRT02.EL.StFault OR #BRT03.EL.StFault OR #BRT04.EL.StFault;
+	    
+	    "CONTROLE_STATUS_DB".StStartingGlobal.BRITADORES.BRT02 := #BRT02.EL.StPreparing;
+	    "CONTROLE_STATUS_DB".StOnGlobal.BRITADORES.BRT02 := #BRT02.EL.StOn;
+	    "CONTROLE_STATUS_DB".StFaultGlobal.BRITADORES.BRT02 := #BRT02.EL.StFault;
+	    
+	    "CONTROLE_STATUS_DB".StStartingGlobal.BRITADORES.BRT03 := #BRT03.EL.StPreparing;
+	    "CONTROLE_STATUS_DB".StOnGlobal.BRITADORES.BRT03 := #BRT03.EL.StOn;
+	    "CONTROLE_STATUS_DB".StFaultGlobal.BRITADORES.BRT03 := #BRT03.EL.StFault;
+	    
+	    "CONTROLE_STATUS_DB".StStartingGlobal.BRITADORES.BRT04 := #BRT04.EL.StPreparing;
+	    "CONTROLE_STATUS_DB".StOnGlobal.BRITADORES.BRT04 := #BRT04.EL.StOn;
+	    "CONTROLE_STATUS_DB".StFaultGlobal.BRITADORES.BRT04 := #BRT04.EL.StFault;
+	END_REGION
+END_FUNCTION_BLOCK
+
